@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: EdgeInsets.all(16),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 4,
-                      childAspectRatio: 1,
+                      childAspectRatio: 0.8,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                     ),
@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconService.getFileIcon(program.path, smallIcon: false) ??
+          IconService.getFileIcon(program.path, size: IconSize.jumbo) ??
               Icon(Icons.apps),
           SizedBox(height: 8),
           Text(
