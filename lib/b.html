@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速启动器 - 极简侧边栏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 60px;
+            background: #fff;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar:hover {
+            width: 220px;
+        }
+
+        .sidebar-header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.1s;
+        }
+
+        .sidebar:hover .search-box {
+            opacity: 1;
+        }
+
+        .categories {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .category-item {
+            height: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            position: relative;
+        }
+
+        .category-item:hover {
+            background: #f8f9fa;
+        }
+
+        .category-item.active {
+            background: #e3f2fd;
+            border-right: 3px solid #2196f3;
+        }
+
+        .category-icon {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .category-name {
+            margin-left: 12px;
+            font-size: 14px;
+            color: #495057;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.1s;
+        }
+
+        .sidebar:hover .category-name {
+            opacity: 1;
+        }
+
+        .add-category {
+            height: 50px;
+            border-top: 1px solid #e9ecef;
+            cursor: pointer;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            transition: all 0.2s ease;
+        }
+
+        .add-category:hover {
+            background: #f8f9fa;
+            color: #2196f3;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            height: 60px;
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+        }
+
+        .category-title {
+            font-size: 18px;
+            color: #212529;
+            font-weight: 500;
+        }
+
+        .programs-area {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 16px;
+            min-height: 200px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            border: 2px dashed transparent;
+            transition: all 0.3s ease;
+        }
+
+        .programs-grid.dragover {
+            border-color: #2196f3;
+            background: #f3f8ff;
+        }
+
+        .program-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .program-item:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .program-icon {
+            width: 48px;
+            height: 48px;
+            background: #2196f3;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .program-name {
+            font-size: 12px;
+            color: #495057;
+            text-align: center;
+            word-break: break-all;
+            line-height: 1.2;
+            max-height: 30px;
+            overflow: hidden;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 18px;
+            height: 18px;
+            background: #dc3545;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .program-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 40px;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            width: 320px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+            color: #212529;
+            font-size: 16px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 10px 12px;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <input type="text" class="search-box" placeholder="搜索程序..." id="searchInput">
+            </div>
+            <div class="categories" id="categoriesList">
+                <!-- 类别列表将在这里显示 -->
+            </div>
+            <div class="add-category" onclick="showAddCategoryModal()">
+                <div class="category-icon">+</div>
+                <div class="category-name">添加类别</div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="content-header">
+                <h2 class="category-title" id="categoryTitle">所有程序</h2>
+            </div>
+            
+            <div class="programs-area">
+                <div class="programs-grid" id="programsGrid">
+                    <!-- 程序图标将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加类别模态框 -->
+    <div class="modal" id="addCategoryModal">
+        <div class="modal-content">
+            <h3>添加新类别</h3>
+            <input type="text" id="categoryNameInput" placeholder="类别名称">
+            <input type="text" id="categoryIconInput" placeholder="图标 (emoji)" maxlength="2">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="hideAddCategoryModal()">取消</button>
+                <button class="btn btn-primary" onclick="addCategory()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let programs = JSON.parse(localStorage.getItem('programs')) || [];
+        let categories = JSON.parse(localStorage.getItem('categories')) || [
+            { id: 'all', name: '所有程序', icon: '📱' },
+            { id: 'work', name: '工作', icon: '💼' },
+            { id: 'entertainment', name: '娱乐', icon: '🎮' },
+            { id: 'tools', name: '工具', icon: '🔧' }
+        ];
+        let currentCategory = 'all';
+
+        function saveData() {
+            localStorage.setItem('programs', JSON.stringify(programs));
+            localStorage.setItem('categories', JSON.stringify(categories));
+        }
+
+        function renderCategories() {
+            const categoriesList = document.getElementById('categoriesList');
+            categoriesList.innerHTML = categories.map(cat => `
+                <div class="category-item ${cat.id === currentCategory ? 'active' : ''}" 
+                     onmouseover="selectCategory('${cat.id}')">
+                    <div class="category-icon">${cat.icon}</div>
+                    <div class="category-name">${cat.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectCategory(categoryId) {
+            currentCategory = categoryId;
+            const category = categories.find(cat => cat.id === categoryId);
+            document.getElementById('categoryTitle').textContent = category ? category.name : '所有程序';
+            
+            renderCategories();
+            renderPrograms();
+        }
+
+        function renderPrograms() {
+            const grid = document.getElementById('programsGrid');
+            const filteredPrograms = currentCategory === 'all' 
+                ? programs 
+                : programs.filter(p => p.category === currentCategory);
+            
+            if (filteredPrograms.length === 0) {
+                grid.innerHTML = '<div class="empty-state">暂无程序<br>拖拽程序文件到此区域添加</div>';
+                return;
+            }
+            
+            grid.innerHTML = filteredPrograms.map(program => `
+                <div class="program-item" onclick="launchProgram('${program.path}')">
+                    <div class="program-icon">${program.icon || '📄'}</div>
+                    <div class="program-name">${program.name}</div>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deleteProgram('${program.id}')">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function launchProgram(path) {
+            alert(`启动程序: ${path}\n\n注意：在实际应用中，这需要桌面应用框架（如Electron）来实现程序启动功能。`);
+        }
+
+        function deleteProgram(id) {
+            if (confirm('确定要删除这个程序吗？')) {
+                programs = programs.filter(p => p.id !== id);
+                saveData();
+                renderPrograms();
+            }
+        }
+
+        function showAddCategoryModal() {
+            document.getElementById('addCategoryModal').style.display = 'block';
+        }
+
+        function hideAddCategoryModal() {
+            document.getElementById('addCategoryModal').style.display = 'none';
+            document.getElementById('categoryNameInput').value = '';
+            document.getElementById('categoryIconInput').value = '';
+        }
+
+        function addCategory() {
+            const name = document.getElementById('categoryNameInput').value.trim();
+            const icon = document.getElementById('categoryIconInput').value.trim() || '📁';
+            
+            if (name) {
+                const id = name.toLowerCase().replace(/\s+/g, '_');
+                categories.push({ id, name, icon });
+                saveData();
+                renderCategories();
+                hideAddCategoryModal();
+            }
+        }
+
+        // 拖拽功能
+        const programsGrid = document.getElementById('programsGrid');
+        
+        programsGrid.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            programsGrid.classList.add('dragover');
+        });
+        
+        programsGrid.addEventListener('dragleave', () => {
+            programsGrid.classList.remove('dragover');
+        });
+        
+        programsGrid.addEventListener('drop', (e) => {
+            e.preventDefault();
+            programsGrid.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            files.forEach(file => {
+                if (file.name.endsWith('.exe') || file.name.endsWith('.lnk')) {
+                    const program = {
+                        id: Date.now() + Math.random(),
+                        name: file.name.replace(/\.(exe|lnk)$/, ''),
+                        path: file.path || file.name,
+                        category: currentCategory === 'all' ? 'tools' : currentCategory,
+                        icon: '📄'
+                    };
+                    programs.push(program);
+                }
+            });
+            
+            saveData();
+            renderPrograms();
+        });
+
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const grid = document.getElementById('programsGrid');
+            const items = grid.querySelectorAll('.program-item');
+            
+            items.forEach(item => {
+                const name = item.querySelector('.program-name').textContent.toLowerCase();
+                item.style.display = name.includes(query) ? 'flex' : 'none';
+            });
+        });
+
+        // 初始化
+        renderCategories();
+        renderPrograms();
+    </script>
+</body>
+</html>
