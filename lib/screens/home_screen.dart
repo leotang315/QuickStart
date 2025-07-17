@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../models/program.dart';
 import '../services/database_service.dart';
@@ -340,99 +342,106 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           // 主内容区域
           Expanded(
-            child: Column(
-              children: [
-                // 内容头部
-                Container(
-                  height: 60,
-                  padding: EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
+            child: AnimatedContainer(
+              duration: Duration(milliseconds: 200), // 与侧边栏动画持续时间相同
+              curve: Curves.easeInOut,
+              child: Column(
+                children: [
+                  // 内容头部
+                  Container(
+                    height: 60,
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
+                      ),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      _selectedCategory,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF212529),
+                      ),
                     ),
                   ),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _selectedCategory,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF212529),
-                    ),
-                  ),
-                ),
-                // 程序显示区域
-                Expanded(
-                  child: Container(
-                    color: Color(0xFFF8F9FA),
-                    padding: EdgeInsets.all(24),
-                    child: DragTarget<String>(
-                      onWillAccept: (data) {
-                        setState(() {
-                          _isDragging = true;
-                        });
-                        return data != null &&
-                            (data.endsWith('.exe') || data.endsWith('.lnk'));
-                      },
-                      onAccept: (data) {
-                        setState(() {
-                          _isDragging = false;
-                        });
-                        _showAddProgramDialog(data);
-                      },
-                      onLeave: (data) {
-                        setState(() {
-                          _isDragging = false;
-                        });
-                      },
-                      builder: (context, candidateData, rejectedData) {
-                        return Container(
-                          padding: EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _isDragging
-                                  ? Color(0xFF2196F3)
-                                  : Colors.transparent,
-                              width: 2,
-                              style: _isDragging
-                                  ? BorderStyle.solid
-                                  : BorderStyle.none,
+                  // 程序显示区域
+                  Expanded(
+                    child: Container(
+                      color: Color(0xFFF8F9FA),
+                      padding: EdgeInsets.all(24),
+                      child: DragTarget<String>(
+                        onWillAccept: (data) {
+                          setState(() {
+                            _isDragging = true;
+                          });
+                          return data != null &&
+                              (data.endsWith('.exe') || data.endsWith('.lnk'));
+                        },
+                        onAccept: (data) {
+                          setState(() {
+                            _isDragging = false;
+                          });
+                          _showAddProgramDialog(data);
+                        },
+                        onLeave: (data) {
+                          setState(() {
+                            _isDragging = false;
+                          });
+                        },
+                        builder: (context, candidateData, rejectedData) {
+                          return Container(
+                            padding: EdgeInsets.all(8),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _isDragging
+                                    ? Color(0xFF2196F3)
+                                    : Colors.transparent,
+                                width: 2,
+                                style: _isDragging
+                                    ? BorderStyle.solid
+                                    : BorderStyle.none,
+                              ),
                             ),
-                          ),
-                          child: _filteredPrograms.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    '暂无程序\n拖拽程序文件到此区域添加',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF6C757D),
-                                      fontStyle: FontStyle.italic,
+                            child: _filteredPrograms.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      '暂无程序\n拖拽程序文件到此区域添加',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Color(0xFF6C757D),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  )
+                                : // 替换 GridView.builder 部分
+                                  SingleChildScrollView(
+                                    child: Wrap(
+                                      spacing: 16, // 水平间距
+                                      runSpacing: 16, // 垂直间距
+                                      children: _filteredPrograms.map((
+                                        program,
+                                      ) {
+                                        return SizedBox(
+                                          width: 120, // 固定宽度
+                                          height: 120, // 固定高度
+                                          child: _buildProgramTile(program),
+                                        );
+                                      }).toList(),
                                     ),
                                   ),
-                                )
-                              : GridView.builder(
-                                  gridDelegate:
-                                      SliverGridDelegateWithMaxCrossAxisExtent(
-                                        maxCrossAxisExtent: 120,
-                                        childAspectRatio: 0.8,
-                                        crossAxisSpacing: 16,
-                                        mainAxisSpacing: 16,
-                                      ),
-                                  itemCount: _filteredPrograms.length,
-                                  itemBuilder: (context, index) {
-                                    final program = _filteredPrograms[index];
-                                    return _buildProgramTile(program);
-                                  },
-                                ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -509,16 +518,11 @@ class _HomeScreenState extends State<HomeScreen> {
             await _launcherService.launchProgram(program);
           },
           child: Container(
+            width: 120,
+            height: 120,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.amber,
               borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-              ],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -528,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 48,
                   margin: EdgeInsets.only(bottom: 8),
                   decoration: BoxDecoration(
-                    color: Color(0xFF2196F3),
+                    color: Colors.blue,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -555,48 +559,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-        Positioned(
-          top: 4,
-          right: 4,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('确认删除'),
-                    content: Text('确定要删除 ${program.name} 吗？'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('取消'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('删除'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true && program.id != null) {
-                  await _databaseService.deleteProgram(program.id!);
-                  _loadPrograms();
-                }
-              },
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: Color(0xFFDC3545),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.close, size: 10, color: Colors.white),
-              ),
             ),
           ),
         ),
