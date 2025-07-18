@@ -36,7 +36,7 @@ dependencies:
   sqflite: ^2.3.0  # 本地SQLite数据库
   sqflite_common_ffi: ^2.3.0
   shared_preferences: ^2.2.2  # 简单键值对存储
-  process_run: ^0.13.1  # 用于运行外部程序
+  url_launcher: ^6.2.5  # 用于启动URL和应用程序
   file_picker: ^6.1.1  # 用于选择程序文件
   window_manager: ^0.3.7  # 窗口管理（最小化到托盘等）
   hotkey_manager: ^0.1.8  # 全局热键支持

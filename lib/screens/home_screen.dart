@@ -457,54 +457,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showAddProgramDialog(String filePath) {
-    final fileName = filePath.split('\\').last.split('.').first;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('添加程序'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('是否添加以下程序？'),
-            SizedBox(height: 8),
-            Text(filePath, style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddProgramScreen(
-                    program: Program(
-                      name: fileName,
-                      path: filePath,
-                      category: _selectedCategory == 'All'
-                          ? null
-                          : _selectedCategory,
-                    ),
-                  ),
-                ),
-              ).then((value) {
-                if (value == true) {
-                  _loadPrograms();
-                }
-              });
-            },
-            child: Text('添加'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _handleFileDrop(DropDoneDetails detail) async {
     {
       List<String> filePaths = detail.files.map((file) => file.path).toList();

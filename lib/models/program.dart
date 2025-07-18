@@ -42,19 +42,4 @@ class Program {
       isFrequent: map['isFrequent'] == 1,
     );
   }
-
-  Future<bool> launch() async {
-    try {
-      final file = File(path);
-      if (await file.exists()) {
-        // 使用process_run包启动程序
-        // 实际实现需要根据平台特定代码
-        return true;
-      }
-      return false;
-    } catch (e) {
-      print('Error launching program: $e');
-      return false;
-    }
-  }
 }
