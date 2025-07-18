@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import '../models/program.dart';
 import '../services/database_service.dart';
 import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
+import '../widgets/program_tile.dart';
 import 'add_program_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -372,71 +375,63 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Container(
                       color: Color(0xFFF8F9FA),
                       padding: EdgeInsets.all(24),
-                      child: DragTarget<String>(
-                        onWillAccept: (data) {
+                      child: DropTarget(
+                        onDragDone: (detail) => _handleFileDrop(detail),
+                        onDragEntered: (detail) {
                           setState(() {
                             _isDragging = true;
                           });
-                          return data != null &&
-                              (data.endsWith('.exe') || data.endsWith('.lnk'));
                         },
-                        onAccept: (data) {
-                          setState(() {
-                            _isDragging = false;
-                          });
-                          _showAddProgramDialog(data);
-                        },
-                        onLeave: (data) {
+                        onDragExited: (detail) {
                           setState(() {
                             _isDragging = false;
                           });
                         },
-                        builder: (context, candidateData, rejectedData) {
-                          return Container(
-                            padding: EdgeInsets.all(8),
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: _isDragging
-                                    ? Color(0xFF2196F3)
-                                    : Colors.transparent,
-                                width: 2,
-                                style: _isDragging
-                                    ? BorderStyle.solid
-                                    : BorderStyle.none,
-                              ),
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _isDragging
+                                  ? Color(0xFF2196F3)
+                                  : Colors.transparent,
+                              width: 2,
+                              style: _isDragging
+                                  ? BorderStyle.solid
+                                  : BorderStyle.none,
                             ),
-                            child: _filteredPrograms.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      '暂无程序\n拖拽程序文件到此区域添加',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Color(0xFF6C757D),
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
-                                  )
-                                : // 替换 GridView.builder 部分
-                                  SingleChildScrollView(
-                                    child: Wrap(
-                                      spacing: 16, // 水平间距
-                                      runSpacing: 16, // 垂直间距
-                                      children: _filteredPrograms.map((
-                                        program,
-                                      ) {
-                                        return SizedBox(
-                                          width: 120, // 固定宽度
-                                          height: 120, // 固定高度
-                                          child: _buildProgramTile(program),
-                                        );
-                                      }).toList(),
+                          ),
+                          child: _filteredPrograms.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    '暂无程序\n拖拽程序文件到此区域添加',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Color(0xFF6C757D),
+                                      fontStyle: FontStyle.italic,
                                     ),
                                   ),
-                          );
-                        },
+                                )
+                              : // 替换 GridView.builder 部分
+                                SingleChildScrollView(
+                                  child: Wrap(
+                                    spacing: 16, // 水平间距
+                                    runSpacing: 16, // 垂直间距
+                                    children: _filteredPrograms.map((program) {
+                                      return SizedBox(
+                                        width: 120, // 固定宽度
+                                        height: 120, // 固定高度
+                                        child: ProgramTile(
+                                          program: program,
+                                          launcherService: _launcherService,
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                        ),
                       ),
                     ),
                   ),
@@ -510,59 +505,122 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProgramTile(Program program) {
-    return Stack(
-      children: [
-        InkWell(
-          onTap: () async {
-            await _launcherService.launchProgram(program);
-          },
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.amber,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+  Future<void> _handleFileDrop(DropDoneDetails detail) async {
+    {
+      List<String> filePaths = detail.files.map((file) => file.path).toList();
+
+      // // 显示加载指示器
+      // showDialog(
+      //   context: context,
+      //   barrierDismissible: false,
+      //   builder: (BuildContext context) {
+      //     return AlertDialog(
+      //       content: Row(
+      //         children: [
+      //           CircularProgressIndicator(),
+      //           SizedBox(width: 16),
+      //           Text("正在添加程序..."),
+      //         ],
+      //       ),
+      //     );
+      //   },
+      // );
+
+      int successCount = 0;
+      List<String> failedFiles = [];
+
+      // 处理每个文件
+      for (String filePath in filePaths) {
+        try {
+          final fileName = filePath.split('\\').last.split('.').first;
+          final program = Program(
+            name: fileName,
+            path: filePath,
+            category: _selectedCategory == 'All' ? null : _selectedCategory,
+          );
+
+          await _databaseService.insertProgram(program);
+          successCount++;
+        } catch (e) {
+          failedFiles.add(filePath);
+        }
+      }
+
+      // // 关闭加载对话框
+      // Navigator.pop(context);
+
+      // 重新加载程序列表
+      await _loadPrograms();
+
+      // // 显示添加结果
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text(
+      //       successCount > 0
+      //           ? "成功添加 $successCount 个程序${failedFiles.isNotEmpty ? '，${failedFiles.length} 个添加失败' : ''}"
+      //           : "添加失败，请检查文件格式",
+      //     ),
+      //     duration: Duration(seconds: 3),
+      //   ),
+      // );
+    }
+
+    // 直接添加程序到数据库
+    Future<void> _addProgramsDirectly(List<String> filePaths) async {
+      // 显示加载指示器
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  margin: EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child:
-                        IconService.getFileIcon(
-                          program.path,
-                          size: IconSize.jumbo,
-                        ) ??
-                        Icon(
-                          Icons.insert_drive_file,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(
-                    program.name,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    style: TextStyle(fontSize: 12, color: Color(0xFF495057)),
-                  ),
-                ),
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("正在添加程序..."),
               ],
             ),
+          );
+        },
+      );
+
+      int successCount = 0;
+      List<String> failedFiles = [];
+
+      // 处理每个文件
+      for (String filePath in filePaths) {
+        try {
+          final fileName = filePath.split('\\').last.split('.').first;
+          final program = Program(
+            name: fileName,
+            path: filePath,
+            category: _selectedCategory == 'All' ? null : _selectedCategory,
+          );
+
+          await _databaseService.insertProgram(program);
+          successCount++;
+        } catch (e) {
+          failedFiles.add(filePath);
+        }
+      }
+
+      // 关闭加载对话框
+      Navigator.pop(context);
+
+      // 重新加载程序列表
+      await _loadPrograms();
+
+      // 显示添加结果
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            successCount > 0
+                ? "成功添加 $successCount 个程序${failedFiles.isNotEmpty ? '，${failedFiles.length} 个添加失败' : ''}"
+                : "添加失败，请检查文件格式",
           ),
+          duration: Duration(seconds: 3),
         ),
-      ],
-    );
+      );
+    }
   }
 }

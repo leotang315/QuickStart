@@ -16,7 +16,8 @@ class LauncherService {
         final command = program.arguments != null
             ? '${program.path} ${program.arguments}'
             : program.path;
-        await run(command);
+        //  await run("D:\\Program Files (x86)\\Everything\\Everything.exe");
+        await Process.run(command, []);
         return true;
       }
       return false;
