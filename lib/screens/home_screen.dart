@@ -44,12 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadPrograms() async {
     final programs = await _databaseService.getPrograms();
-    final categories = programs
-        .map((p) => p.category)
-        .where((c) => c != null && c.isNotEmpty)
-        .map((c) => c!)
-        .toSet()
-        .toList();
+    final categories =
+        programs
+            .map((p) => p.category)
+            .where((c) => c != null && c.isNotEmpty)
+            .map((c) => c!)
+            .toSet()
+            .toList();
 
     setState(() {
       _programs = programs;
@@ -76,48 +77,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('添加新类别'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: categoryNameController,
-              decoration: InputDecoration(
-                labelText: '类别名称',
-                border: OutlineInputBorder(),
-              ),
+      builder:
+          (context) => AlertDialog(
+            title: Text('添加新类别'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: categoryNameController,
+                  decoration: InputDecoration(
+                    labelText: '类别名称',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  controller: categoryIconController,
+                  decoration: InputDecoration(
+                    labelText: '图标 (emoji)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 2,
+                ),
+              ],
             ),
-            SizedBox(height: 16),
-            TextField(
-              controller: categoryIconController,
-              decoration: InputDecoration(
-                labelText: '图标 (emoji)',
-                border: OutlineInputBorder(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('取消'),
               ),
-              maxLength: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('取消'),
+              TextButton(
+                onPressed: () {
+                  final name = categoryNameController.text.trim();
+                  if (name.isNotEmpty && !_categories.contains(name)) {
+                    setState(() {
+                      _categories.add(name);
+                    });
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text('添加'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              final name = categoryNameController.text.trim();
-              if (name.isNotEmpty && !_categories.contains(name)) {
-                setState(() {
-                  _categories.add(name);
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: Text('添加'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -211,15 +213,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemBuilder: (context, index) {
                         final category = _categories[index];
                         final isSelected = _selectedCategory == category;
-                        final icon = category == 'All'
-                            ? '📱'
-                            : category == '工作'
-                            ? '💼'
-                            : category == '娱乐'
-                            ? '🎮'
-                            : category == '工具'
-                            ? '🔧'
-                            : '📁';
+                        final icon =
+                            category == 'All'
+                                ? '📱'
+                                : category == '工作'
+                                ? '💼'
+                                : category == '娱乐'
+                                ? '🎮'
+                                : category == '工具'
+                                ? '🔧'
+                                : '📁';
 
                         return InkWell(
                           onTap: () {
@@ -239,14 +242,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: 50,
                             padding: EdgeInsets.symmetric(horizontal: 13),
                             decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Color(0xFFE3F2FD)
-                                  : Colors.transparent,
+                              color:
+                                  isSelected
+                                      ? Color(0xFFE3F2FD)
+                                      : Colors.transparent,
                               border: Border(
                                 right: BorderSide(
-                                  color: isSelected
-                                      ? Color(0xFF2196F3)
-                                      : Colors.transparent,
+                                  color:
+                                      isSelected
+                                          ? Color(0xFF2196F3)
+                                          : Colors.transparent,
                                   width: 4,
                                 ),
                               ),
@@ -274,15 +279,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       child: Text(
                                         category,
-                                        overflow: TextOverflow
-                                            .clip, // 或使用 TextOverflow.ellipsis
+                                        overflow:
+                                            TextOverflow
+                                                .clip, // 或使用 TextOverflow.ellipsis
                                         maxLines: 1,
                                         style: TextStyle(
                                           fontSize: 14,
                                           color: Color(0xFF495057),
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
+                                          fontWeight:
+                                              isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
                                         ),
                                       ),
                                     ),
@@ -324,8 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 child: Text(
                                   '添加类别',
-                                  overflow: TextOverflow
-                                      .clip, // 或使用 TextOverflow.ellipsis
+                                  overflow:
+                                      TextOverflow
+                                          .clip, // 或使用 TextOverflow.ellipsis
                                   maxLines: 1,
                                   style: TextStyle(
                                     fontSize: 14,
@@ -394,43 +402,48 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: _isDragging
-                                  ? Color(0xFF2196F3)
-                                  : Colors.transparent,
+                              color:
+                                  _isDragging
+                                      ? Color(0xFF2196F3)
+                                      : Colors.transparent,
                               width: 2,
-                              style: _isDragging
-                                  ? BorderStyle.solid
-                                  : BorderStyle.none,
+                              style:
+                                  _isDragging
+                                      ? BorderStyle.solid
+                                      : BorderStyle.none,
                             ),
                           ),
-                          child: _filteredPrograms.isEmpty
-                              ? Center(
-                                  child: Text(
-                                    '暂无程序\n拖拽程序文件到此区域添加',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Color(0xFF6C757D),
-                                      fontStyle: FontStyle.italic,
+                          child:
+                              _filteredPrograms.isEmpty
+                                  ? Center(
+                                    child: Text(
+                                      '暂无程序\n拖拽程序文件到此区域添加',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Color(0xFF6C757D),
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  )
+                                  : // 替换 GridView.builder 部分
+                                  SingleChildScrollView(
+                                    child: Wrap(
+                                      spacing: 16, // 水平间距
+                                      runSpacing: 16, // 垂直间距
+                                      children:
+                                          _filteredPrograms.map((program) {
+                                            return SizedBox(
+                                              width: 120, // 固定宽度
+                                              height: 120, // 固定高度
+                                              child: ProgramTile(
+                                                program: program,
+                                                launcherService:
+                                                    _launcherService,
+                                              ),
+                                            );
+                                          }).toList(),
                                     ),
                                   ),
-                                )
-                              : // 替换 GridView.builder 部分
-                                SingleChildScrollView(
-                                  child: Wrap(
-                                    spacing: 16, // 水平间距
-                                    runSpacing: 16, // 垂直间距
-                                    children: _filteredPrograms.map((program) {
-                                      return SizedBox(
-                                        width: 120, // 固定宽度
-                                        height: 120, // 固定高度
-                                        child: ProgramTile(
-                                          program: program,
-                                          launcherService: _launcherService,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
                         ),
                       ),
                     ),

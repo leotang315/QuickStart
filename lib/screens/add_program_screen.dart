@@ -62,8 +62,12 @@ class _AddProgramScreenState extends State<AddProgramScreen> {
         id: widget.program?.id,
         name: _nameController.text,
         path: _pathController.text,
-        arguments: _argumentsController.text.isEmpty ? null : _argumentsController.text,
-        category: _categoryController.text.isEmpty ? null : _categoryController.text,
+        arguments:
+            _argumentsController.text.isEmpty
+                ? null
+                : _argumentsController.text,
+        category:
+            _categoryController.text.isEmpty ? null : _categoryController.text,
       );
 
       if (widget.program == null) {
@@ -79,9 +83,7 @@ class _AddProgramScreenState extends State<AddProgramScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.program == null ? '添加程序' : '编辑程序'),
-      ),
+      appBar: AppBar(title: Text(widget.program == null ? '添加程序' : '编辑程序')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -121,10 +123,7 @@ class _AddProgramScreenState extends State<AddProgramScreen> {
                     ),
                   ),
                   SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _pickFile,
-                    child: Text('浏览'),
-                  ),
+                  ElevatedButton(onPressed: _pickFile, child: Text('浏览')),
                 ],
               ),
               SizedBox(height: 16),
