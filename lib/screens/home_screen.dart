@@ -27,19 +27,33 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
   bool _isSidebarHovered = false;
+  bool _isSidebarExpanded = false;
+  bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isDragging = false;
   bool _isOverlayVisible = false;
+  late VoidCallback _searchFocusListener;
 
   @override
   void initState() {
     super.initState();
     _loadPrograms();
+
+    // 监听搜索框焦点变化
+    _searchFocusListener = () {
+      if (!_searchFocusNode.hasFocus && _searchController.text.isEmpty) {
+        setState(() {
+          _isSearchExpanded = false;
+        });
+      }
+    };
+    _searchFocusNode.addListener(_searchFocusListener);
   }
 
   @override
   void dispose() {
+    _searchFocusNode.removeListener(_searchFocusListener);
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
@@ -141,370 +155,80 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     // appBar: AppBar(title: Text('标题')),
       body: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 头部区域
-              Container(height: 60,width: double.infinity, color: Colors.amber, child: Text("123")),
+              _buildHeader(
+                isSidebarExpanded: _isSidebarExpanded,
+                isSearchExpanded: _isSearchExpanded,
+                searchController: _searchController,
+                searchFocusNode: _searchFocusNode,
+                onMenuTap: () {
+                  setState(() {
+                    _isSidebarExpanded = !_isSidebarExpanded;
+                  });
+                },
+                onSearchChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                onExpandSearch: () {
+                  setState(() {
+                    _isSearchExpanded = true;
+                  });
+                },
+                onCollapseSearch: () {
+                  setState(() {
+                    _isSearchExpanded = false;
+                  });
+                },
+              ),
               Expanded(
                 child: Row(
                   children: [
                     // 侧边栏部分
-                    MouseRegion(
-                      onEnter: (_) => setState(() => _isSidebarHovered = true),
-                      onExit: (_) => setState(() => _isSidebarHovered = false),
-                      child: AnimatedContainer(
-                        duration: Duration(milliseconds: 200),
-                        width: _isSidebarHovered ? 220 : 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: Offset(2, 0),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // // 侧边栏头部
-                            Container(
-                              height: 60,
-                              padding: EdgeInsets.symmetric(horizontal: 15),
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Color(0xFFE9ECEF),
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: AnimatedOpacity(
-                                      opacity: _isSidebarHovered ? 1.0 : 0.0,
-                                      duration: Duration(milliseconds: 300),
-                                      child: TextField(
-                                        controller: _searchController,
-                                        focusNode: _searchFocusNode,
-                                        decoration: InputDecoration(
-                                          hintText: '搜索程序...',
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 12,
-                                          ),
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: Color(0xFFDEE2E6),
-                                            ),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: Color(0xFFDEE2E6),
-                                            ),
-                                          ),
-                                          isDense: true,
-                                        ),
-                                        style: TextStyle(fontSize: 14),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            _searchQuery = value;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  ),
+                    _buildSidebar(
+                      isSidebarExpanded: _isSidebarExpanded,
+                      categories: _categories,
+                      selectedCategory: _selectedCategory,
+                      onAddCategory: _showAddCategoryDialog,
+                      onSiderbarExpanded: () {
+                        setState(() {
+                          _isSidebarExpanded = !_isSidebarExpanded;
+                        });
+                      },
+                      onCategorySelected: (category) {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                      },
 
-                                  if (!_isSidebarHovered)
-                                    SizedBox(
-                                      width: 30,
-                                      height: 30,
-                                      child: Icon(
-                                        Icons.search,
-                                        color: Color(0xFF495057),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            // // 类别列表
-                            Expanded(
-                              child: ListView.builder(
-                                padding: EdgeInsets.symmetric(vertical: 8),
-                                itemCount: _categories.length,
-                                itemBuilder: (context, index) {
-                                  final category = _categories[index];
-                                  final isSelected =
-                                      _selectedCategory == category;
-                                  final icon =
-                                      category == 'All'
-                                          ? '📱'
-                                          : category == '工作'
-                                          ? '💼'
-                                          : category == '娱乐'
-                                          ? '🎮'
-                                          : category == '工具'
-                                          ? '🔧'
-                                          : '📁';
-
-                                  return InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedCategory = category;
-                                      });
-                                    },
-                                    onHover: (isHovering) {
-                                      if (_isSidebarHovered && isHovering) {
-                                        setState(() {
-                                          _selectedCategory = category;
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      alignment: Alignment.center,
-                                      height: 50,
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 13,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            isSelected
-                                                ? Color(0xFFE3F2FD)
-                                                : Colors.transparent,
-                                        border: Border(
-                                          right: BorderSide(
-                                            color:
-                                                isSelected
-                                                    ? Color(0xFF2196F3)
-                                                    : Colors.transparent,
-                                            width: 4,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            color: Colors.transparent,
-                                            width: 30,
-                                            height: 30,
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              icon,
-                                              style: TextStyle(fontSize: 16),
-                                            ),
-                                          ),
-
-                                          Flexible(
-                                            child: AnimatedOpacity(
-                                              opacity:
-                                                  _isSidebarHovered ? 1.0 : 0.0,
-                                              duration: Duration(
-                                                milliseconds: 200,
-                                              ),
-                                              child: Padding(
-                                                padding: EdgeInsets.only(
-                                                  left:
-                                                      _isSidebarHovered
-                                                          ? 12
-                                                          : 0,
-                                                ),
-                                                child: Text(
-                                                  category,
-                                                  overflow:
-                                                      TextOverflow
-                                                          .clip, // 或使用 TextOverflow.ellipsis
-                                                  maxLines: 1,
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    color: Color(0xFF495057),
-                                                    fontWeight:
-                                                        isSelected
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            // 添加类别按钮
-                            InkWell(
-                              onTap: _showAddCategoryDialog,
-                              child: Container(
-                                height: 50,
-                                padding: EdgeInsets.symmetric(horizontal: 15),
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: Color(0xFFE9ECEF),
-                                      width: 1,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      alignment: Alignment.center,
-                                      child: Icon(
-                                        Icons.add,
-                                        color: Color(0xFF6C757D),
-                                      ),
-                                    ),
-                                    Flexible(
-                                      child: AnimatedOpacity(
-                                        opacity: _isSidebarHovered ? 1.0 : 0.0,
-                                        duration: Duration(milliseconds: 200),
-                                        child: Padding(
-                                          padding: EdgeInsets.only(
-                                            left: _isSidebarHovered ? 12 : 0,
-                                          ),
-                                          child: Text(
-                                            '添加类别',
-                                            overflow:
-                                                TextOverflow
-                                                    .clip, // 或使用 TextOverflow.ellipsis
-                                            maxLines: 1,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Color(0xFF6C757D),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      onHoverChanged: (isHovered) {
+                        setState(() {
+                          _isSidebarHovered = isHovered;
+                        });
+                      },
                     ),
                     // 主内容区域
-                    Expanded(
-                      child: AnimatedContainer(
-                        duration: Duration(milliseconds: 200), // 与侧边栏动画持续时间相同
-                        curve: Curves.easeInOut,
-                        child: Column(
-                          children: [
-                            // 内容头部 - 添加动画按钮
-                            Container(
-                              height: 60,
-                              padding: EdgeInsets.symmetric(horizontal: 24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Color(0xFFE9ECEF),
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                _selectedCategory,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF212529),
-                                ),
-                              ),
-                            ),
-                            // 程序显示区域
-                            Expanded(
-                              child: Container(
-                                color: Color(0xFFF8F9FA),
-                                padding: EdgeInsets.all(24),
-                                child: DropTarget(
-                                  onDragDone:
-                                      (detail) => _handleFileDrop(detail),
-                                  onDragEntered: (detail) {
-                                    setState(() {
-                                      _isDragging = true;
-                                    });
-                                  },
-                                  onDragExited: (detail) {
-                                    setState(() {
-                                      _isDragging = false;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.all(8),
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color:
-                                            _isDragging
-                                                ? Color(0xFF2196F3)
-                                                : Colors.transparent,
-                                        width: 2,
-                                        style:
-                                            _isDragging
-                                                ? BorderStyle.solid
-                                                : BorderStyle.none,
-                                      ),
-                                    ),
-                                    child:
-                                        _filteredPrograms.isEmpty
-                                            ? Center(
-                                              child: Text(
-                                                '暂无程序\n拖拽程序文件到此区域添加',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color: Color(0xFF6C757D),
-                                                  fontStyle: FontStyle.italic,
-                                                ),
-                                              ),
-                                            )
-                                            : // 替换 GridView.builder 部分
-                                            SingleChildScrollView(
-                                              child: Wrap(
-                                                spacing: 16, // 水平间距
-                                                runSpacing: 16, // 垂直间距
-                                                children:
-                                                    _filteredPrograms.map((
-                                                      program,
-                                                    ) {
-                                                      return SizedBox(
-                                                        width: 120, // 固定宽度
-                                                        height: 120, // 固定高度
-                                                        child: ProgramTile(
-                                                          program: program,
-                                                          launcherService:
-                                                              _launcherService,
-                                                        ),
-                                                      );
-                                                    }).toList(),
-                                              ),
-                                            ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    _buildMainContent(
+                      filteredPrograms: _filteredPrograms,
+                      isDragging: _isDragging,
+                      launcherService: _launcherService,
+                      onFileDrop: _handleFileDrop,
+                      onDragEntered: () {
+                        setState(() {
+                          _isDragging = true;
+                        });
+                      },
+                      onDragExited: () {
+                        setState(() {
+                          _isDragging = false;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -517,15 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        // onPressed: () async {
-        //   final result = await Navigator.push(
-        //     context,
-        //     MaterialPageRoute(builder: (context) => AddProgramScreen()),
-        //   );
-        //   if (result == true) {
-        //     _loadPrograms();
-        //   }
-        // },
         onPressed: _showAnimatedOverlay,
         tooltip: '添加程序',
         child: Icon(Icons.add),
@@ -651,4 +366,434 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
+}
+
+// 头部组件函数
+Widget _buildHeader({
+  required bool isSidebarExpanded,
+  required bool isSearchExpanded,
+  required TextEditingController searchController,
+  required FocusNode searchFocusNode,
+  required VoidCallback onMenuTap,
+  required ValueChanged<String> onSearchChanged,
+  required VoidCallback onExpandSearch,
+  required VoidCallback onCollapseSearch,
+}) {
+  return Container(
+    height: 60,
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 4,
+          offset: Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        // 标题区域
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            alignment: Alignment.center,
+            child: Text(
+              'QuickStart',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF212529),
+              ),
+            ),
+          ),
+        ),
+        // 搜索框
+        buildSearchBar(
+          isSearchExpanded: isSearchExpanded,
+          searchController: searchController,
+          searchFocusNode: searchFocusNode,
+          onSearchChanged: onSearchChanged,
+          onExpandSearch: onExpandSearch,
+          onCollapseSearch: onCollapseSearch,
+        ),
+      ],
+    ),
+  );
+}
+
+// 搜索栏组件函数
+Widget buildSearchBar({
+  required bool isSearchExpanded,
+  required TextEditingController searchController,
+  required FocusNode searchFocusNode,
+  required ValueChanged<String> onSearchChanged,
+  required VoidCallback onExpandSearch,
+  required VoidCallback onCollapseSearch,
+}) {
+  return AnimatedContainer(
+    duration: Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+    height: 60,
+    width: isSearchExpanded ? 250 : 60,
+    padding: EdgeInsets.symmetric(horizontal: 15),
+
+    child: Row(
+      children: [
+        if (!isSearchExpanded)
+          InkWell(
+            onTap: () {
+              onExpandSearch();
+              searchFocusNode.requestFocus();
+            },
+            borderRadius: BorderRadius.circular(15),
+            child: Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              child: Icon(Icons.search, color: Color(0xFF495057), size: 20),
+            ),
+          ),
+        if (isSearchExpanded)
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    focusNode: searchFocusNode,
+                    decoration: InputDecoration(
+                      hintText: '搜索程序...',
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Color(0xFFDEE2E6)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Color(0xFFDEE2E6)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Color(0xFF2196F3)),
+                      ),
+                      isDense: true,
+                      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: searchController,
+                        builder: (context, value, child) {
+                          return value.text.isNotEmpty
+                              ? IconButton(
+                                icon: Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  searchController.clear();
+                                  onSearchChanged('');
+                                },
+                              )
+                              : SizedBox.shrink();
+                        },
+                      ),
+                    ),
+                    style: TextStyle(fontSize: 14),
+                    onChanged: onSearchChanged,
+                    onSubmitted: (value) {
+                      if (value.isEmpty) {
+                        onCollapseSearch();
+                        searchFocusNode.unfocus();
+                      }
+                    },
+                  ),
+                ),
+             
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+// 侧边栏组件函数
+Widget _buildSidebar({
+  required bool isSidebarExpanded,
+  required List<String> categories,
+  required String selectedCategory,
+  required ValueChanged<String> onCategorySelected,
+  required VoidCallback onAddCategory,
+  required VoidCallback onSiderbarExpanded,
+  required ValueChanged<bool> onHoverChanged,
+}) {
+  return MouseRegion(
+    onEnter: (_) => onHoverChanged(true),
+    onExit: (_) => onHoverChanged(false),
+    child: AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      width: isSidebarExpanded ? 220 : 60,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: Offset(2, 0),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // 汉堡菜单按钮
+          _buildExpandedButton(
+            isSidebarExpanded: isSidebarExpanded,
+            onTap: onSiderbarExpanded,
+          ),
+        
+          // 类别列表
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final category = categories[index];
+                final isSelected = selectedCategory == category;
+                final icon =
+                    category == 'All'
+                        ? '📱'
+                        : category == '工作'
+                        ? '💼'
+                        : category == '娱乐'
+                        ? '🎮'
+                        : category == '工具'
+                        ? '🔧'
+                        : '📁';
+
+                return _buildCategoryItem(
+                  category: category,
+                  icon: icon,
+                  isSelected: isSelected,
+                  isSidebarExpanded: isSidebarExpanded,
+                  onTap: () => onCategorySelected(category),
+                );
+              },
+            ),
+          ),
+          
+          // 添加类别按钮
+          _buildAddCategoryButton(
+            isSidebarExpanded: isSidebarExpanded,
+            onTap: onAddCategory,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// 汉堡菜单按钮
+Widget _buildExpandedButton({
+  required bool isSidebarExpanded,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(8),
+    child: Container(
+      height: 50,
+      padding: EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            child: Icon(
+              isSidebarExpanded ? Icons.menu_open : Icons.menu,
+              color: Color(0xFF6C757D),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// 添加类别按钮组件函数
+Widget _buildAddCategoryButton({
+  required bool isSidebarExpanded,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      height: 50,
+      padding: EdgeInsets.symmetric(horizontal: 15),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            child: Icon(Icons.add, color: Color(0xFF6C757D)),
+          ),
+          Flexible(
+            child: AnimatedOpacity(
+              opacity: isSidebarExpanded ? 1.0 : 0.0,
+              duration: Duration(milliseconds: 200),
+              child: Padding(
+                padding: EdgeInsets.only(left: 12),
+                child: Text(
+                  '添加类别',
+                  overflow: TextOverflow.clip,
+                  maxLines: 1,
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// 类别项组件函数
+Widget _buildCategoryItem({
+  required String category,
+  required String icon,
+  required bool isSelected,
+  required bool isSidebarExpanded,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      alignment: Alignment.center,
+      height: 50,
+      padding: EdgeInsets.symmetric(horizontal: 13),
+      decoration: BoxDecoration(
+        color: isSelected ? Color(0xFFE3F2FD) : Colors.transparent,
+        border: Border(
+          right: BorderSide(
+            color: isSelected ? Color(0xFF2196F3) : Colors.transparent,
+            width: 4,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            color: Colors.transparent,
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            child: Text(icon, style: TextStyle(fontSize: 16)),
+          ),
+          Flexible(
+            child: AnimatedOpacity(
+              opacity: isSidebarExpanded ? 1.0 : 0.0,
+              duration: Duration(milliseconds: 200),
+              child: Padding(
+                padding: EdgeInsets.only(left: isSidebarExpanded ? 12 : 0),
+                child: Text(
+                  category,
+                  overflow: TextOverflow.clip,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF495057),
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// 主内容区域组件函数
+Widget _buildMainContent({
+  required List<Program> filteredPrograms,
+  required bool isDragging,
+  required LauncherService launcherService,
+  required Function(DropDoneDetails) onFileDrop,
+  required VoidCallback onDragEntered,
+  required VoidCallback onDragExited,
+}) {
+  return Expanded(
+    child: AnimatedContainer(
+      duration: Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              color: Color(0xFFF8F9FA),
+              padding: EdgeInsets.all(8),
+              child: DropTarget(
+                onDragDone: onFileDrop,
+                onDragEntered: (detail) => onDragEntered(),
+                onDragExited: (detail) => onDragExited(),
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color:
+                          isDragging ? Color(0xFF2196F3) : Colors.transparent,
+                      width: 2,
+                      style: isDragging ? BorderStyle.solid : BorderStyle.none,
+                    ),
+                  ),
+                  child:
+                      filteredPrograms.isEmpty
+                          ? Center(
+                            child: Text(
+                              '暂无程序\n拖拽程序文件到此区域添加',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFF6C757D),
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          )
+                          : SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              children:
+                                  filteredPrograms.map((program) {
+                                    return SizedBox(
+                                      width: 120,
+                                      height: 120,
+                                      child: ProgramTile(
+                                        program: program,
+                                        launcherService: launcherService,
+                                      ),
+                                    );
+                                  }).toList(),
+                            ),
+                          ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
