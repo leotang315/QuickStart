@@ -78,4 +78,13 @@ class DatabaseService {
       whereArgs: [id],
     );
   }
+
+  Future<int> deleteProgramsByCategory(String category) async {
+    final db = await database;
+    return await db.delete(
+      'programs',
+      where: 'category = ?',
+      whereArgs: [category],
+    );
+  }
 }

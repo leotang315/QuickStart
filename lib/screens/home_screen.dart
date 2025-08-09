@@ -198,6 +198,90 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showDeleteCategoryDialog(String category) {
+    if (category == 'All') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('无法删除"全部"类别'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange),
+            SizedBox(width: 8),
+            Text('确认删除类别'),
+          ],
+        ),
+        content: Text('确定要删除类别 "$category" 吗？\n\n此操作将同时删除该类别下的所有快捷图标，且无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _deleteCategory(category);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteCategory(String category) async {
+    try {
+      // 获取该类别下的程序数量
+      final programsInCategory = await _databaseService.getProgramsByCategory(category);
+      final programCount = programsInCategory.length;
+      
+      // 删除该类别下的所有程序
+      await _databaseService.deleteProgramsByCategory(category);
+      
+      // 从类别列表中移除该类别
+      setState(() {
+        _categories.remove(category);
+        // 如果当前选中的是被删除的类别，切换到"全部"
+        if (_selectedCategory == category) {
+          _selectedCategory = 'All';
+        }
+      });
+      
+      // 重新加载程序列表
+      await _loadPrograms();
+      
+      // 显示删除成功提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('类别 "$category" 及其下的 $programCount 个程序已删除'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      // 显示删除失败提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   void _showAnimatedOverlay() {
     setState(() {
       _isOverlayVisible = true;
@@ -254,6 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       categories: _categories,
                       selectedCategory: _selectedCategory,
                       onAddCategory: _showAddCategoryDialog,
+                      onDeleteCategory: _showDeleteCategoryDialog,
                       onSiderbarExpanded: () {
                         setState(() {
                           _isSidebarExpanded = !_isSidebarExpanded;
@@ -602,6 +687,7 @@ Widget _buildSidebar({
   required String selectedCategory,
   required ValueChanged<String> onCategorySelected,
   required VoidCallback onAddCategory,
+  required ValueChanged<String> onDeleteCategory,
   required VoidCallback onSiderbarExpanded,
   required ValueChanged<bool> onHoverChanged,
 }) {
@@ -654,6 +740,7 @@ Widget _buildSidebar({
                   isSelected: isSelected,
                   isSidebarExpanded: isSidebarExpanded,
                   onTap: () => onCategorySelected(category),
+                  onDelete: category != 'All' ? () => onDeleteCategory(category) : null,
                 );
               },
             ),
@@ -751,6 +838,7 @@ Widget _buildCategoryItem({
   required bool isSelected,
   required bool isSidebarExpanded,
   required VoidCallback onTap,
+  VoidCallback? onDelete,
 }) {
   return InkWell(
     onTap: onTap,
@@ -796,6 +884,25 @@ Widget _buildCategoryItem({
               ),
             ),
           ),
+          if (onDelete != null && isSidebarExpanded)
+            AnimatedOpacity(
+              opacity: isSidebarExpanded ? 1.0 : 0.0,
+              duration: Duration(milliseconds: 200),
+              child: InkWell(
+                onTap: onDelete,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Color(0xFF6C757D),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     ),
