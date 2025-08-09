@@ -34,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isDragging = false;
   bool _isOverlayVisible = false;
   late VoidCallback _searchFocusListener;
+  bool _isEditMode = false;
+  Set<int> _selectedProgramIds = {};
 
   @override
   void initState() {
@@ -73,6 +75,30 @@ class _HomeScreenState extends State<HomeScreen> {
       _programs = programs;
       _categories = ['All', ...categories];
     });
+  }
+
+  Future<void> _deleteProgram(Program program) async {
+    try {
+      await _databaseService.deleteProgram(program.id!);
+      await _loadPrograms(); // 重新加载程序列表
+      
+      // 显示删除成功提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('程序 "${program.name}" 已删除'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // 显示删除失败提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   List<Program> get _filteredPrograms {
@@ -229,6 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _isDragging = false;
                         });
                       },
+                      onDeleteProgram: _deleteProgram,
                     ),
                   ],
                 ),
@@ -731,6 +758,7 @@ Widget _buildMainContent({
   required Function(DropDoneDetails) onFileDrop,
   required VoidCallback onDragEntered,
   required VoidCallback onDragExited,
+  required Function(Program) onDeleteProgram,
 }) {
   return Expanded(
     child: AnimatedContainer(
@@ -783,6 +811,7 @@ Widget _buildMainContent({
                                       child: ProgramTile(
                                         program: program,
                                         launcherService: launcherService,
+                                        onDelete: () => onDeleteProgram(program),
                                       ),
                                     );
                                   }).toList(),
