@@ -9,8 +9,7 @@ class ProgramTile extends StatefulWidget {
   final LauncherService launcherService;
   final VoidCallback? onDelete;
   final bool isEditMode;
-  final bool isSelected;
-  final VoidCallback? onToggleSelect;
+  final VoidCallback? onLongPress;
 
   const ProgramTile({
     Key? key,
@@ -18,8 +17,7 @@ class ProgramTile extends StatefulWidget {
     required this.launcherService,
     this.onDelete,
     this.isEditMode = false,
-    this.isSelected = false,
-    this.onToggleSelect,
+    this.onLongPress,
   }) : super(key: key);
 
   @override
@@ -33,15 +31,13 @@ class _ProgramTileState extends State<ProgramTile> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (widget.isEditMode) {
-          widget.onToggleSelect?.call();
-        } else {
-          widget.launcherService.launchProgram(widget.program);
+        if (!widget.isEditMode) {
+             widget.launcherService.launchProgram(widget.program);
         }
       },
       onLongPress: () {
-        if (!widget.isEditMode && widget.onToggleSelect != null) {
-          widget.onToggleSelect!();
+        if (!widget.isEditMode) {
+          widget.onLongPress?.call();
         }
       },
       onSecondaryTapDown: (details) {
@@ -66,15 +62,13 @@ class _ProgramTileState extends State<ProgramTile> {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: widget.isSelected
-                    ? Colors.blue.withOpacity(0.3)
-                    : _isHovering
-                        ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7)
+                color:
+                    _isHovering
+                        ? Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.7)
                         : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
-                border: widget.isSelected
-                    ? Border.all(color: Colors.blue, width: 2)
-                    : null,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -113,28 +107,30 @@ class _ProgramTileState extends State<ProgramTile> {
                 ],
               ),
             ),
-            if (widget.isEditMode)
+            if (widget.isEditMode && widget.onDelete != null)
               Positioned(
                 top: 4,
                 right: 4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: widget.isSelected ? Colors.blue : Colors.grey[300],
-                    border: Border.all(
-                      color: widget.isSelected ? Colors.blue : Colors.grey[600]!,
-                      width: 2,
+                child: GestureDetector(
+                  onTap: () {
+                    widget.onDelete?.call();
+                  },
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.red,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
+                    child: Icon(Icons.close, size: 16, color: Colors.white),
                   ),
-                  child: widget.isSelected
-                      ? Icon(
-                          Icons.check,
-                          size: 12,
-                          color: Colors.white,
-                        )
-                      : null,
                 ),
               ),
           ],
@@ -145,7 +141,7 @@ class _ProgramTileState extends State<ProgramTile> {
 
   void _showContextMenu(Offset position) {
     if (widget.onDelete == null) return;
-    
+
     showMenu<dynamic>(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -205,9 +201,9 @@ class _ProgramTileState extends State<ProgramTile> {
           ),
           onTap: () {
             // 可以在这里添加属性功能
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('属性功能待实现')),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('属性功能待实现')));
           },
         ),
       ],
