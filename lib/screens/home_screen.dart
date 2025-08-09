@@ -101,6 +101,38 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _deleteSelectedPrograms() async {
+    if (_selectedProgramIds.isEmpty) return;
+    
+    try {
+      for (int programId in _selectedProgramIds) {
+        await _databaseService.deleteProgram(programId);
+      }
+      
+      setState(() {
+        _selectedProgramIds.clear();
+        _isEditMode = false;
+      });
+      
+      await _loadPrograms();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已删除选中的程序'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   List<Program> get _filteredPrograms {
     return _programs.where((program) {
       final matchesSearch = program.name.toLowerCase().contains(
@@ -256,6 +288,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         });
                       },
                       onDeleteProgram: _deleteProgram,
+                      isEditMode: _isEditMode,
+                      selectedProgramIds: _selectedProgramIds,
+                      onToggleEditMode: () {
+                        setState(() {
+                          _isEditMode = !_isEditMode;
+                          if (!_isEditMode) {
+                            _selectedProgramIds.clear();
+                          }
+                        });
+                      },
+                      onDeleteSelected: _deleteSelectedPrograms,
+                      onToggleSelect: (program) {
+                        setState(() {
+                          if (_selectedProgramIds.contains(program.id)) {
+                            _selectedProgramIds.remove(program.id);
+                          } else {
+                            _selectedProgramIds.add(program.id!);
+                          }
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -759,6 +811,11 @@ Widget _buildMainContent({
   required VoidCallback onDragEntered,
   required VoidCallback onDragExited,
   required Function(Program) onDeleteProgram,
+  required bool isEditMode,
+  required Set<int> selectedProgramIds,
+  required VoidCallback onToggleEditMode,
+  required VoidCallback onDeleteSelected,
+  required Function(Program) onToggleSelect,
 }) {
   return Expanded(
     child: AnimatedContainer(
@@ -766,6 +823,55 @@ Widget _buildMainContent({
       curve: Curves.easeInOut,
       child: Column(
         children: [
+          // 编辑模式工具栏
+          if (isEditMode || filteredPrograms.isNotEmpty)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+              ),
+              child: Row(
+                children: [
+                  if (!isEditMode)
+                    TextButton.icon(
+                      onPressed: onToggleEditMode,
+                      icon: Icon(Icons.edit, size: 18),
+                      label: Text('编辑'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                      ),
+                    ),
+                  if (isEditMode) ...[
+                    Text(
+                      '已选择 ${selectedProgramIds.length} 个程序',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Spacer(),
+                    if (selectedProgramIds.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: onDeleteSelected,
+                        icon: Icon(Icons.delete, size: 18),
+                        label: Text('删除'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                    SizedBox(width: 8),
+                    TextButton(
+                      onPressed: onToggleEditMode,
+                      child: Text('完成'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           Expanded(
             child: Container(
               color: Color(0xFFF8F9FA),
@@ -812,6 +918,9 @@ Widget _buildMainContent({
                                         program: program,
                                         launcherService: launcherService,
                                         onDelete: () => onDeleteProgram(program),
+                                        isEditMode: isEditMode,
+                                        isSelected: selectedProgramIds.contains(program.id),
+                                        onToggleSelect: () => onToggleSelect(program),
                                       ),
                                     );
                                   }).toList(),
