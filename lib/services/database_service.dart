@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/program.dart';
+import '../models/category.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -20,8 +21,9 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'quick_start.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _createDb,
+      onUpgrade: _upgradeDb,
     );
   }
 
@@ -34,9 +36,21 @@ class DatabaseService {
         arguments TEXT,
         iconPath TEXT,
         category TEXT,
-        isFrequent INTEGER NOT NULL DEFAULT 0
+        isFrequent INTEGER NOT NULL DEFAULT 0,
+        defaultIconName TEXT
       )
     ''');
+    
+    await db.execute('''
+      CREATE TABLE categories(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        iconName TEXT
+      )
+    ''');
+    
+    // 插入默认类别
+    await db.insert('categories', {'name': 'All', 'iconName': null});
   }
 
   Future<int> insertProgram(Program program) async {
@@ -85,6 +99,68 @@ class DatabaseService {
       'programs',
       where: 'category = ?',
       whereArgs: [category],
+    );
+  }
+
+  Future<void> _upgradeDb(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE programs ADD COLUMN defaultIconName TEXT');
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE categories(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          iconName TEXT
+        )
+      ''');
+      
+      // 插入默认类别
+      await db.insert('categories', {'name': 'All', 'iconName': null});
+      
+      // 从现有程序中提取类别并插入到categories表
+      final List<Map<String, dynamic>> existingCategories = await db.rawQuery(
+        'SELECT DISTINCT category FROM programs WHERE category IS NOT NULL AND category != ""'
+      );
+      
+      for (final categoryMap in existingCategories) {
+        final categoryName = categoryMap['category'] as String;
+        if (categoryName != 'All') {
+          await db.insert('categories', {'name': categoryName, 'iconName': null}, 
+            conflictAlgorithm: ConflictAlgorithm.ignore);
+        }
+      }
+    }
+  }
+
+  // Category operations
+  Future<int> insertCategory(Category category) async {
+    final db = await database;
+    return await db.insert('categories', category.toMap());
+  }
+
+  Future<List<Category>> getCategories() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('categories');
+    return List.generate(maps.length, (i) => Category.fromMap(maps[i]));
+  }
+
+  Future<int> updateCategory(Category category) async {
+    final db = await database;
+    return await db.update(
+      'categories',
+      category.toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+    );
+  }
+
+  Future<int> deleteCategory(int id) async {
+    final db = await database;
+    return await db.delete(
+      'categories',
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 }
