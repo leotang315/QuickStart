@@ -1106,6 +1106,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Color(0xFF6C757D),
                 ),
               ),
+              Flexible(
+                child: AnimatedOpacity(
+                  opacity: _isSidebarExpanded ? 1.0 : 0.0,
+                  duration: Duration(milliseconds: 200),
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: Text(
+                      '类别',
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
