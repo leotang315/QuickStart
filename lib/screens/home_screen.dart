@@ -173,6 +173,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _deleteCategory(String category) async {
+    try {
+      // 获取该类别下的程序数量
+      final programsInCategory = await _databaseService.getProgramsByCategory(
+        category,
+      );
+      final programCount = programsInCategory.length;
+
+      // 删除该类别下的所有程序
+      await _databaseService.deleteProgramsByCategory(category);
+
+      // 从数据库中删除类别记录
+      final categoryData = _categoryData[category];
+      if (categoryData?.id != null) {
+        await _databaseService.deleteCategory(categoryData!.id!);
+      }
+
+      // 从类别列表中移除该类别
+      setState(() {
+        _categories.remove(category);
+        _categoryData.remove(category);
+        // 如果当前选中的是被删除的类别，切换到"全部"
+        if (_selectedCategory == category) {
+          _selectedCategory = 'All';
+        }
+      });
+
+      // 重新加载程序列表
+      await _loadPrograms();
+
+      // 显示删除成功提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('类别 "$category" 及其下的 $programCount 个程序已删除'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      // 显示删除失败提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   List<Program> get _filteredPrograms {
     return _programs.where((program) {
       final matchesSearch = program.name.toLowerCase().contains(
@@ -714,55 +763,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _deleteCategory(String category) async {
-    try {
-      // 获取该类别下的程序数量
-      final programsInCategory = await _databaseService.getProgramsByCategory(
-        category,
-      );
-      final programCount = programsInCategory.length;
-
-      // 删除该类别下的所有程序
-      await _databaseService.deleteProgramsByCategory(category);
-      
-      // 从数据库中删除类别记录
-      final categoryData = _categoryData[category];
-      if (categoryData?.id != null) {
-        await _databaseService.deleteCategory(categoryData!.id!);
-      }
-     
-      // 从类别列表中移除该类别
-      setState(() {
-        _categories.remove(category);
-        _categoryData.remove(category);
-        // 如果当前选中的是被删除的类别，切换到"全部"
-        if (_selectedCategory == category) {
-          _selectedCategory = 'All';
-        }
-      });
-
-      // 重新加载程序列表
-      await _loadPrograms();
-
-      // 显示删除成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('类别 "$category" 及其下的 $programCount 个程序已删除'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } catch (e) {
-      // 显示删除失败提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('删除失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
   void _showAnimatedOverlay() {
     setState(() {
       _isOverlayVisible = true;
@@ -781,110 +781,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _isCategoryEditMode = false;
       _categoryToDelete = null;
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _hideAllDeleteButtons,
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 头部区域
-                _buildHeader(
-                  isSidebarExpanded: _isSidebarExpanded,
-                  isSearchExpanded: _isSearchExpanded,
-                  searchController: _searchController,
-                  searchFocusNode: _searchFocusNode,
-                  onMenuTap: () {
-                    setState(() {
-                      _isSidebarExpanded = !_isSidebarExpanded;
-                    });
-                  },
-                  onSearchChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  onExpandSearch: () {
-                    setState(() {
-                      _isSearchExpanded = true;
-                    });
-                  },
-                  onCollapseSearch: () {
-                    setState(() {
-                      _isSearchExpanded = false;
-                    });
-                  },
-                ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      // 侧边栏部分
-                      _buildSidebar(
-                        isSidebarExpanded: _isSidebarExpanded,
-                        categories: _categories,
-                        selectedCategory: _selectedCategory,
-                        onAddCategory: _showAddCategoryDialog,
-                        onDeleteCategory: _showDeleteCategoryDialog,
-                        onSiderbarExpanded: () {
-                          setState(() {
-                            _isSidebarExpanded = !_isSidebarExpanded;
-                          });
-                        },
-                        onCategorySelected: (category) {
-                          setState(() {
-                            _selectedCategory = category;
-                          });
-                        },
-
-                        buildCategoryItem: _buildCategoryItem,
-                      ),
-                      // 主内容区域
-                      _buildMainContent(
-                        filteredPrograms: _filteredPrograms,
-                        isDragging: _isDragging,
-                        launcherService: _launcherService,
-                        onFileDrop: _handleFileDrop,
-                        onDragEntered: () {
-                          setState(() {
-                            _isDragging = true;
-                          });
-                        },
-                        onDragExited: () {
-                          setState(() {
-                            _isDragging = false;
-                          });
-                        },
-                        onDeleteProgram: _deleteProgram,
-                        isEditMode: _isEditMode,
-                        onToggleEditMode: () {
-                          setState(() {
-                            _isEditMode = !_isEditMode;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 动画蒙板
-            if (_isOverlayVisible)
-              AnimatedOverlay(onClose: _hideAnimatedOverlay),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showAnimatedOverlay,
-          tooltip: '添加程序',
-          child: Icon(Icons.add),
-        ),
-      ),
-    );
   }
 
   Future<void> _handleFileDrop(DropDoneDetails detail) async {
@@ -1006,123 +902,107 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 类别项组件方法
-  Widget _buildCategoryItem({
-    required String category,
-    required String icon,
-    required bool isSelected,
-    required bool isSidebarExpanded,
-    required VoidCallback onTap,
-    VoidCallback? onDelete,
-  }) {
-    bool showDeleteButton =
-        _isEditMode && _isCategoryEditMode && category != 'All';
-
-    return Stack(
-      children: [
-        MouseRegion(
-          onEnter: (event) {
-            // 鼠标悬停时自动选择类别
-            if (!isSelected) {
-              onTap();
-            }
-          },
-          child: GestureDetector(
-            onTap: onTap,
-            onLongPress: () {
-              if (onDelete != null && category != 'All') {
-                setState(() {
-                  print("删除类别：$category");
-
-                  _isEditMode = true;
-                  _isCategoryEditMode = true;
-                  _categoryToDelete = category;
-                });
-              }
-            },
-            child: Container(
-              alignment: Alignment.center,
-              height: 50,
-              padding: EdgeInsets.symmetric(horizontal: 13),
-              decoration: BoxDecoration(
-                color: isSelected ? Color(0xFFE3F2FD) : Colors.transparent,
-                border: Border(
-                  right: BorderSide(
-                    color: isSelected ? Color(0xFF2196F3) : Colors.transparent,
-                    width: 4,
-                  ),
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _hideAllDeleteButtons,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 头部区域
+                _buildHeader(
+                  isSidebarExpanded: _isSidebarExpanded,
+                  isSearchExpanded: _isSearchExpanded,
+                  searchController: _searchController,
+                  searchFocusNode: _searchFocusNode,
+                  onMenuTap: () {
+                    setState(() {
+                      _isSidebarExpanded = !_isSidebarExpanded;
+                    });
+                  },
+                  onSearchChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  onExpandSearch: () {
+                    setState(() {
+                      _isSearchExpanded = true;
+                    });
+                  },
+                  onCollapseSearch: () {
+                    setState(() {
+                      _isSearchExpanded = false;
+                    });
+                  },
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    color: Colors.transparent,
-                    width: 30,
-                    height: 30,
-                    alignment: Alignment.center,
-                    child: _buildCategoryIconWidget(icon),
-                  ),
-                  Flexible(
-                    child: AnimatedOpacity(
-                      opacity: isSidebarExpanded ? 1.0 : 0.0,
-                      duration: Duration(milliseconds: 200),
-                      child: Padding(
-                        padding: EdgeInsets.only(
-                          left: isSidebarExpanded ? 12 : 0,
-                        ),
-                        child: Text(
-                          category,
-                          overflow: TextOverflow.clip,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF495057),
-                            fontWeight:
-                                isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                          ),
-                        ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      // 侧边栏部分
+                      _buildSidebar(
+                        isSidebarExpanded: _isSidebarExpanded,
+                        categories: _categories,
+                        selectedCategory: _selectedCategory,
+                        onAddCategory: _showAddCategoryDialog,
+                        onDeleteCategory: _showDeleteCategoryDialog,
+                        onSiderbarExpanded: () {
+                          setState(() {
+                            _isSidebarExpanded = !_isSidebarExpanded;
+                          });
+                        },
+                        onCategorySelected: (category) {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+
+                        buildCategoryItem: _buildCategoryItem,
                       ),
-                    ),
+                      // 主内容区域
+                      _buildMainContent(
+                        filteredPrograms: _filteredPrograms,
+                        isDragging: _isDragging,
+                        launcherService: _launcherService,
+                        onFileDrop: _handleFileDrop,
+                        onDragEntered: () {
+                          setState(() {
+                            _isDragging = true;
+                          });
+                        },
+                        onDragExited: () {
+                          setState(() {
+                            _isDragging = false;
+                          });
+                        },
+                        onDeleteProgram: _deleteProgram,
+                        isEditMode: _isEditMode,
+                        onToggleEditMode: () {
+                          setState(() {
+                            _isEditMode = !_isEditMode;
+                          });
+                        },
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (showDeleteButton)
-          Positioned(
-            right: 2,
-            top: 2,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _isEditMode = false;
-                  _isCategoryEditMode = false;
-                  _categoryToDelete = null;
-                });
-                onDelete?.call();
-              },
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.red,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 3,
-                      offset: Offset(0, 1),
-                    ),
-                  ],
                 ),
-                child: Icon(Icons.close, size: 12, color: Colors.white),
-              ),
+              ],
             ),
-          ),
-      ],
+
+            // 动画蒙板
+            if (_isOverlayVisible)
+              AnimatedOverlay(onClose: _hideAnimatedOverlay),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAnimatedOverlay,
+          tooltip: '添加程序',
+          child: Icon(Icons.add),
+        ),
+      ),
     );
   }
 
@@ -1382,6 +1262,126 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 类别项组件方法
+  Widget _buildCategoryItem({
+    required String category,
+    required String icon,
+    required bool isSelected,
+    required bool isSidebarExpanded,
+    required VoidCallback onTap,
+    VoidCallback? onDelete,
+  }) {
+    bool showDeleteButton =
+        _isEditMode && _isCategoryEditMode && category != 'All';
+
+    return Stack(
+      children: [
+        MouseRegion(
+          onEnter: (event) {
+            // 鼠标悬停时自动选择类别
+            if (!isSelected) {
+              onTap();
+            }
+          },
+          child: GestureDetector(
+            onTap: onTap,
+            onLongPress: () {
+              if (onDelete != null && category != 'All') {
+                setState(() {
+                  print("删除类别：$category");
+
+                  _isEditMode = true;
+                  _isCategoryEditMode = true;
+                  _categoryToDelete = category;
+                });
+              }
+            },
+            child: Container(
+              alignment: Alignment.center,
+              height: 50,
+              padding: EdgeInsets.symmetric(horizontal: 13),
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFFE3F2FD) : Colors.transparent,
+                border: Border(
+                  right: BorderSide(
+                    color: isSelected ? Color(0xFF2196F3) : Colors.transparent,
+                    width: 4,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    color: Colors.transparent,
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    child: _buildCategoryIconWidget(icon),
+                  ),
+                  Flexible(
+                    child: AnimatedOpacity(
+                      opacity: isSidebarExpanded ? 1.0 : 0.0,
+                      duration: Duration(milliseconds: 200),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: isSidebarExpanded ? 12 : 0,
+                        ),
+                        child: Text(
+                          category,
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF495057),
+                            fontWeight:
+                                isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (showDeleteButton)
+          Positioned(
+            right: 2,
+            top: 2,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _isEditMode = false;
+                  _isCategoryEditMode = false;
+                  _categoryToDelete = null;
+                });
+                onDelete?.call();
+              },
+              child: Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.red,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 3,
+                      offset: Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.close, size: 12, color: Colors.white),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   // 添加类别按钮组件函数
   Widget _buildAddCategoryButton({
     required bool isSidebarExpanded,
@@ -1423,90 +1423,91 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
 
-// 主内容区域组件函数
-Widget _buildMainContent({
-  required List<Program> filteredPrograms,
-  required bool isDragging,
-  required LauncherService launcherService,
-  required Function(DropDoneDetails) onFileDrop,
-  required VoidCallback onDragEntered,
-  required VoidCallback onDragExited,
-  required Function(Program) onDeleteProgram,
-  required bool isEditMode,
-  required VoidCallback onToggleEditMode,
-}) {
-  return Expanded(
-    child: AnimatedContainer(
-      duration: Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-      child: Column(
-        children: [
-          Expanded(
-            child: Container(
-              color: Color(0xFFF8F9FA),
-              padding: EdgeInsets.all(8),
-              child: DropTarget(
-                onDragDone: onFileDrop,
-                onDragEntered: (detail) => onDragEntered(),
-                onDragExited: (detail) => onDragExited(),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color:
-                          isDragging ? Color(0xFF2196F3) : Colors.transparent,
-                      width: 2,
-                      style: isDragging ? BorderStyle.solid : BorderStyle.none,
+  // 主内容区域组件函数
+  Widget _buildMainContent({
+    required List<Program> filteredPrograms,
+    required bool isDragging,
+    required LauncherService launcherService,
+    required Function(DropDoneDetails) onFileDrop,
+    required VoidCallback onDragEntered,
+    required VoidCallback onDragExited,
+    required Function(Program) onDeleteProgram,
+    required bool isEditMode,
+    required VoidCallback onToggleEditMode,
+  }) {
+    return Expanded(
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        child: Column(
+          children: [
+            Expanded(
+              child: Container(
+                color: Color(0xFFF8F9FA),
+                padding: EdgeInsets.all(8),
+                child: DropTarget(
+                  onDragDone: onFileDrop,
+                  onDragEntered: (detail) => onDragEntered(),
+                  onDragExited: (detail) => onDragExited(),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color:
+                            isDragging ? Color(0xFF2196F3) : Colors.transparent,
+                        width: 2,
+                        style:
+                            isDragging ? BorderStyle.solid : BorderStyle.none,
+                      ),
                     ),
-                  ),
-                  child:
-                      filteredPrograms.isEmpty
-                          ? Center(
-                            child: Text(
-                              '暂无程序\n拖拽程序文件到此区域添加',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF6C757D),
-                                fontStyle: FontStyle.italic,
+                    child:
+                        filteredPrograms.isEmpty
+                            ? Center(
+                              child: Text(
+                                '暂无程序\n拖拽程序文件到此区域添加',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Color(0xFF6C757D),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            )
+                            : SingleChildScrollView(
+                              child: Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children:
+                                    filteredPrograms.map((program) {
+                                      return SizedBox(
+                                        width: 120,
+                                        height: 120,
+                                        child: ProgramTile(
+                                          program: program,
+                                          launcherService: launcherService,
+                                          onDelete:
+                                              () => onDeleteProgram(program),
+                                          isEditMode: isEditMode,
+                                          onLongPress: () {
+                                            if (!isEditMode) {
+                                              onToggleEditMode();
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
                               ),
                             ),
-                          )
-                          : SingleChildScrollView(
-                            child: Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
-                              children:
-                                  filteredPrograms.map((program) {
-                                    return SizedBox(
-                                      width: 120,
-                                      height: 120,
-                                      child: ProgramTile(
-                                        program: program,
-                                        launcherService: launcherService,
-                                        onDelete:
-                                            () => onDeleteProgram(program),
-                                        isEditMode: isEditMode,
-                                        onLongPress: () {
-                                          if (!isEditMode) {
-                                            onToggleEditMode();
-                                          }
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                          ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
