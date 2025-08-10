@@ -1049,17 +1049,22 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: [
           if (!isSearchExpanded)
-            InkWell(
-              onTap: () {
-                onExpandSearch();
-                searchFocusNode.requestFocus();
-              },
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                width: 30,
-                height: 30,
-                alignment: Alignment.center,
-                child: Icon(Icons.search, color: Color(0xFF495057), size: 20),
+            Tooltip(
+              message: '搜索程序',
+              preferBelow: false,
+              verticalOffset: 20,
+              child: InkWell(
+                onTap: () {
+                  onExpandSearch();
+                  searchFocusNode.requestFocus();
+                },
+                borderRadius: BorderRadius.circular(15),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  child: Icon(Icons.search, color: Color(0xFF495057), size: 20),
+                ),
               ),
             ),
           if (isSearchExpanded)
@@ -1204,28 +1209,33 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isSidebarExpanded,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        height: 50,
-        padding: EdgeInsets.symmetric(horizontal: 15),
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              child: Icon(
-                isSidebarExpanded ? Icons.menu_open : Icons.menu,
-                color: Color(0xFF6C757D),
+    return Tooltip(
+      message: isSidebarExpanded ? '收起侧边栏' : '展开侧边栏',
+      preferBelow: false,
+      verticalOffset: 20,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          height: 50,
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                child: Icon(
+                  isSidebarExpanded ? Icons.menu_open : Icons.menu,
+                  color: Color(0xFF6C757D),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1354,38 +1364,43 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isSidebarExpanded,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 50,
-        padding: EdgeInsets.symmetric(horizontal: 15),
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              child: Icon(Icons.add, color: Color(0xFF6C757D)),
-            ),
-            Flexible(
-              child: AnimatedOpacity(
-                opacity: isSidebarExpanded ? 1.0 : 0.0,
-                duration: Duration(milliseconds: 200),
-                child: Padding(
-                  padding: EdgeInsets.only(left: 12),
-                  child: Text(
-                    '添加类别',
-                    overflow: TextOverflow.clip,
-                    maxLines: 1,
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+    return Tooltip(
+      message: '添加新类别',
+      preferBelow: false,
+      verticalOffset: 20,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 50,
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                child: Icon(Icons.add, color: Color(0xFF6C757D)),
+              ),
+              Flexible(
+                child: AnimatedOpacity(
+                  opacity: isSidebarExpanded ? 1.0 : 0.0,
+                  duration: Duration(milliseconds: 200),
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: Text(
+                      '添加类别',
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
