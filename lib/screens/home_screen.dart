@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   List<String> _categories = ['All'];
   Map<String, Category> _categoryData = {}; // 存储类别数据映射
-  bool _isSidebarHovered = false;
+
   bool _isSidebarExpanded = false;
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
@@ -72,13 +72,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (categoryName == 'All') {
       return '📱';
     }
-    
+
     final categoryData = _categoryData[categoryName];
     if (categoryData?.iconName != null) {
       // 直接返回存储的图标名称，让_buildCategoryIconWidget处理
       return categoryData!.iconName!;
     }
-    
+
     // 默认图标
     return '📁';
   }
@@ -89,17 +89,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isEmoji(iconIdentifier)) {
       return Text(iconIdentifier, style: TextStyle(fontSize: 16));
     }
-    
+
     // 如果是CategoryIcon名称，查找对应的图标
     final categoryIcon = CategoryIconService.getIconByName(iconIdentifier);
     if (categoryIcon != null) {
-      return Icon(
-        categoryIcon.icon,
-        color: Color(0xFF6C757D),
-        size: 16,
-      );
+      return Icon(categoryIcon.icon, color: Color(0xFF6C757D), size: 16);
     }
-    
+
     // 默认显示为文本
     return Text(iconIdentifier, style: TextStyle(fontSize: 16));
   }
@@ -107,11 +103,22 @@ class _HomeScreenState extends State<HomeScreen> {
   // 检查字符串是否为emoji
   bool _isEmoji(String text) {
     if (text.isEmpty) return false;
-    
+
     // 常见的emoji字符
-    final emojiList = ['📱', '📁', '💼', '🎮', '🔧', '🎵', '🎨', '📚', '🏠', '⚙️'];
+    final emojiList = [
+      '📱',
+      '📁',
+      '💼',
+      '🎮',
+      '🔧',
+      '🎵',
+      '🎨',
+      '📚',
+      '🏠',
+      '⚙️',
+    ];
     if (emojiList.contains(text)) return true;
-    
+
     // 使用更广泛的Unicode范围检测emoji
     final emojiRegex = RegExp(
       r'[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]',
@@ -123,10 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadPrograms() async {
     final programs = await _databaseService.getPrograms();
     final categories = await _databaseService.getCategories();
-    
+
     // 从数据库获取类别名称列表
     final categoryNames = categories.map((c) => c.name).toList();
-    
+
     // 确保'All'类别在第一位
     final sortedCategories = ['All'];
     for (final name in categoryNames) {
@@ -183,376 +190,389 @@ class _HomeScreenState extends State<HomeScreen> {
     String? selectedIconName;
     IconData? selectedIcon;
 
-
-      showDialog(
-        context: context,
-        barrierColor: Colors.black.withOpacity(0.3),
-        builder: (context) => Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 16,
-          child: Container(
-            width: 400,
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.3),
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题栏
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF0078D4).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.add_circle_outline,
-                        color: Color(0xFF0078D4),
-                        size: 20,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      '添加新类别',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1F1F1F),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24),
-                // 表单内容
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '类别名称',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF424242),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    TextField(
-                      controller: categoryNameController,
-                      decoration: InputDecoration(
-                        hintText: '请输入类别名称',
-                        filled: true,
-                        fillColor: Color(0xFFF8F9FA),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Color(0xFFE1E5E9),
-                            width: 1,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Color(0xFFE1E5E9),
-                            width: 1,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Color(0xFF0078D4),
-                            width: 2,
-                          ),
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      '类别图标',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF424242),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    StatefulBuilder(
-                      builder: (context, setDialogState) => Container(
-                        padding: EdgeInsets.all(16),
+            elevation: 16,
+            child: Container(
+              width: 400,
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 标题栏
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Color(0xFFF8F9FA),
+                          color: Color(0xFF0078D4).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Color(0xFFE1E5E9),
-                            width: 1,
+                        ),
+                        child: Icon(
+                          Icons.add_circle_outline,
+                          color: Color(0xFF0078D4),
+                          size: 20,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        '添加新类别',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F1F1F),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  // 表单内容
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '类别名称',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF424242),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      TextField(
+                        controller: categoryNameController,
+                        decoration: InputDecoration(
+                          hintText: '请输入类别名称',
+                          filled: true,
+                          fillColor: Color(0xFFF8F9FA),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: Color(0xFFE1E5E9),
+                              width: 1,
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: Color(0xFFE1E5E9),
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(
+                              color: Color(0xFF0078D4),
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Color(0xFFE1E5E9),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: selectedIcon != null
-                                      ? Icon(
-                                          selectedIcon,
-                                          color: Color(0xFF0078D4),
-                                          size: 20,
-                                        )
-                                      : Icon(
-                                          Icons.category,
-                                          color: Color(0xFF9E9E9E),
-                                          size: 20,
-                                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        '类别图标',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF424242),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      StatefulBuilder(
+                        builder:
+                            (context, setDialogState) => Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFF8F9FA),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color(0xFFE1E5E9),
+                                  width: 1,
                                 ),
-                                SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
                                     children: [
-                                      Text(
-                                        selectedIconName ?? '未选择图标',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: selectedIconName != null
-                                              ? Color(0xFF1F1F1F)
-                                              : Color(0xFF9E9E9E),
-                                        ),
-                                      ),
-                                      if (selectedIconName == null)
-                                        Text(
-                                          '点击下方按钮选择图标',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Color(0xFF9E9E9E),
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: Color(0xFFE1E5E9),
+                                            width: 1,
                                           ),
                                         ),
+                                        child:
+                                            selectedIcon != null
+                                                ? Icon(
+                                                  selectedIcon,
+                                                  color: Color(0xFF0078D4),
+                                                  size: 20,
+                                                )
+                                                : Icon(
+                                                  Icons.category,
+                                                  color: Color(0xFF9E9E9E),
+                                                  size: 20,
+                                                ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              selectedIconName ?? '未选择图标',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color:
+                                                    selectedIconName != null
+                                                        ? Color(0xFF1F1F1F)
+                                                        : Color(0xFF9E9E9E),
+                                              ),
+                                            ),
+                                            if (selectedIconName == null)
+                                              Text(
+                                                '点击下方按钮选择图标',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Color(0xFF9E9E9E),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () {
-                                      showCategoryIconSelector(
-                                        context: context,
-                                        selectedIconName: selectedIconName,
-                                        onIconSelected: (iconName) {
-                                          setDialogState(() {
-                                            selectedIconName = iconName;
-                                            if (iconName != null) {
-                                              final categoryIcon = CategoryIconService.getIconByName(iconName);
-                                              selectedIcon = categoryIcon?.icon;
-                                            } else {
+                                  SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            showCategoryIconSelector(
+                                              context: context,
+                                              selectedIconName:
+                                                  selectedIconName,
+                                              onIconSelected: (iconName) {
+                                                setDialogState(() {
+                                                  selectedIconName = iconName;
+                                                  if (iconName != null) {
+                                                    final categoryIcon =
+                                                        CategoryIconService.getIconByName(
+                                                          iconName,
+                                                        );
+                                                    selectedIcon =
+                                                        categoryIcon?.icon;
+                                                  } else {
+                                                    selectedIcon = null;
+                                                  }
+                                                });
+                                              },
+                                            );
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Color(0xFF0078D4),
+                                            side: BorderSide(
+                                              color: Color(0xFF0078D4),
+                                              width: 1,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '选择图标',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (selectedIconName != null) ...[
+                                        SizedBox(width: 8),
+                                        OutlinedButton(
+                                          onPressed: () {
+                                            setDialogState(() {
+                                              selectedIconName = null;
                                               selectedIcon = null;
-                                            }
-                                          });
-                                        },
-                                      );
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Color(0xFF0078D4),
-                                      side: BorderSide(
-                                        color: Color(0xFF0078D4),
-                                        width: 1,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '选择图标',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (selectedIconName != null) ...[
-                                  SizedBox(width: 8),
-                                  OutlinedButton(
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        selectedIconName = null;
-                                        selectedIcon = null;
-                                      });
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Color(0xFF6C757D),
-                                      side: BorderSide(
-                                        color: Color(0xFFE1E5E9),
-                                        width: 1,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '清除',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                            });
+                                          },
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Color(0xFF6C757D),
+                                            side: BorderSide(
+                                              color: Color(0xFFE1E5E9),
+                                              width: 1,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '清除',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ],
-                              ],
+                              ),
                             ),
-                          ],
-                        ),
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 32),
-                // 按钮区域
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // 取消按钮
-                    Container(
-                      height: 36,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Color(0xFF424242),
-                          side: BorderSide(
-                            color: Color(0xFFE1E5E9),
-                            width: 1,
+                    ],
+                  ),
+                  SizedBox(height: 32),
+                  // 按钮区域
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // 取消按钮
+                      Container(
+                        height: 36,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Color(0xFF424242),
+                            side: BorderSide(
+                              color: Color(0xFFE1E5E9),
+                              width: 1,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Text(
-                          '取消',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                          child: Text(
+                            '取消',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 12),
-                    // 添加按钮
-                    Container(
-                      height: 36,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final name = categoryNameController.text.trim();
-                          if (name.isNotEmpty && !_categories.contains(name)) {
-                            try {
-                              // 创建新类别对象
-                              final newCategory = Category(
-                                name: name,
-                                iconName: selectedIconName,
-                              );
-                              
-                              // 保存到数据库
-                              await _databaseService.insertCategory(newCategory);
-                              
-                              // 更新UI
-                              setState(() {
-                                _categories.add(name);
-                              });
-                              
-                              Navigator.pop(context);
-                              
-                              // 显示成功提示
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('类别 "$name" 添加成功'),
-                                  backgroundColor: Colors.green,
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                            } catch (e) {
-                              // 显示错误提示
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('添加类别失败: $e'),
-                                  backgroundColor: Colors.red,
-                                  duration: Duration(seconds: 3),
-                                ),
-                              );
+                      SizedBox(width: 12),
+                      // 添加按钮
+                      Container(
+                        height: 36,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final name = categoryNameController.text.trim();
+                            if (name.isNotEmpty &&
+                                !_categories.contains(name)) {
+                              try {
+                                // 创建新类别对象
+                                final newCategory = Category(
+                                  name: name,
+                                  iconName: selectedIconName,
+                                );
+
+                                // 保存到数据库
+                                await _databaseService.insertCategory(
+                                  newCategory,
+                                );
+
+                                // 更新UI
+                                setState(() {
+                                  _categories.add(name);
+                                });
+
+                                Navigator.pop(context);
+
+                                // 显示成功提示
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('类别 "$name" 添加成功'),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              } catch (e) {
+                                // 显示错误提示
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('添加类别失败: $e'),
+                                    backgroundColor: Colors.red,
+                                    duration: Duration(seconds: 3),
+                                  ),
+                                );
+                              }
                             }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0078D4),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0078D4),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
                           ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                        ),
-                        child: Text(
-                          '添加',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                          child: Text(
+                            '添加',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
-    
-   
-
+    );
   }
 
   void _showDeleteCategoryDialog(String category) {
@@ -569,123 +589,128 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 16,
-        child: Container(
-          width: 400,
-          padding: EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title area
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFF6B35).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.warning_rounded,
-                      color: Color(0xFFFF6B35),
-                      size: 20,
-                    ),
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 16,
+            child: Container(
+              width: 400,
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
                   ),
-                  SizedBox(width: 12),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title area
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(0xFFFF6B35).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.warning_rounded,
+                          color: Color(0xFFFF6B35),
+                          size: 20,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        '确认删除类别',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20),
+                  // Content
                   Text(
-                    '确认删除类别',
+                    '确定要删除类别 "$category" 吗？',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1F2937),
+                      fontSize: 14,
+                      color: Color(0xFF374151),
+                      height: 1.5,
                     ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '此操作将同时删除该类别下的所有快捷图标，且无法撤销。',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                      height: 1.4,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          '取消',
+                          style: TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _deleteCategory(category);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          '删除',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              SizedBox(height: 20),
-              // Content
-              Text(
-                '确定要删除类别 "$category" 吗？',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF374151),
-                  height: 1.5,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                '此操作将同时删除该类别下的所有快捷图标，且无法撤销。',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF6B7280),
-                  height: 1.4,
-                ),
-              ),
-              SizedBox(height: 24),
-              // Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      '取消',
-                      style: TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await _deleteCategory(category);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFDC2626),
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      '删除',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -699,10 +724,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 删除该类别下的所有程序
       await _databaseService.deleteProgramsByCategory(category);
-
+      
+      // 从数据库中删除类别记录
+      final categoryData = _categoryData[category];
+      if (categoryData?.id != null) {
+        await _databaseService.deleteCategory(categoryData!.id!);
+      }
+     
       // 从类别列表中移除该类别
       setState(() {
         _categories.remove(category);
+        _categoryData.remove(category);
         // 如果当前选中的是被删除的类别，切换到"全部"
         if (_selectedCategory == category) {
           _selectedCategory = 'All';
@@ -808,11 +840,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             _selectedCategory = category;
                           });
                         },
-                        onHoverChanged: (isHovered) {
-                          setState(() {
-                            _isSidebarHovered = isHovered;
-                          });
-                        },
+
                         buildCategoryItem: _buildCategoryItem,
                       ),
                       // 主内容区域
@@ -992,64 +1020,74 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Stack(
       children: [
-        GestureDetector(
-          onTap: onTap,
-          onLongPress: () {
-            if (onDelete != null && category != 'All') {
-              setState(() {
-                print("删除类别：$category");
-
-                _isEditMode = true;
-                _isCategoryEditMode = true;
-                _categoryToDelete = category;
-              });
+        MouseRegion(
+          onEnter: (event) {
+            // 鼠标悬停时自动选择类别
+            if (!isSelected) {
+              onTap();
             }
           },
-          child: Container(
-            alignment: Alignment.center,
-            height: 50,
-            padding: EdgeInsets.symmetric(horizontal: 13),
-            decoration: BoxDecoration(
-              color: isSelected ? Color(0xFFE3F2FD) : Colors.transparent,
-              border: Border(
-                right: BorderSide(
-                  color: isSelected ? Color(0xFF2196F3) : Colors.transparent,
-                  width: 4,
+          child: GestureDetector(
+            onTap: onTap,
+            onLongPress: () {
+              if (onDelete != null && category != 'All') {
+                setState(() {
+                  print("删除类别：$category");
+
+                  _isEditMode = true;
+                  _isCategoryEditMode = true;
+                  _categoryToDelete = category;
+                });
+              }
+            },
+            child: Container(
+              alignment: Alignment.center,
+              height: 50,
+              padding: EdgeInsets.symmetric(horizontal: 13),
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFFE3F2FD) : Colors.transparent,
+                border: Border(
+                  right: BorderSide(
+                    color: isSelected ? Color(0xFF2196F3) : Colors.transparent,
+                    width: 4,
+                  ),
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  color: Colors.transparent,
-                  width: 30,
-                  height: 30,
-                  alignment: Alignment.center,
-                  child: _buildCategoryIconWidget(icon),
-                ),
-                Flexible(
-                  child: AnimatedOpacity(
-                    opacity: isSidebarExpanded ? 1.0 : 0.0,
-                    duration: Duration(milliseconds: 200),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        left: isSidebarExpanded ? 12 : 0,
-                      ),
-                      child: Text(
-                        category,
-                        overflow: TextOverflow.clip,
-                        maxLines: 1,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF495057),
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
+              child: Row(
+                children: [
+                  Container(
+                    color: Colors.transparent,
+                    width: 30,
+                    height: 30,
+                    alignment: Alignment.center,
+                    child: _buildCategoryIconWidget(icon),
+                  ),
+                  Flexible(
+                    child: AnimatedOpacity(
+                      opacity: isSidebarExpanded ? 1.0 : 0.0,
+                      duration: Duration(milliseconds: 200),
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          left: isSidebarExpanded ? 12 : 0,
+                        ),
+                        child: Text(
+                          category,
+                          overflow: TextOverflow.clip,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF495057),
+                            fontWeight:
+                                isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1244,7 +1282,6 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onAddCategory,
     required ValueChanged<String> onDeleteCategory,
     required VoidCallback onSiderbarExpanded,
-    required ValueChanged<bool> onHoverChanged,
     required Widget Function({
       required String category,
       required String icon,
@@ -1256,8 +1293,6 @@ class _HomeScreenState extends State<HomeScreen> {
     buildCategoryItem,
   }) {
     return MouseRegion(
-      onEnter: (_) => onHoverChanged(true),
-      onExit: (_) => onHoverChanged(false),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
         width: isSidebarExpanded ? 220 : 60,
