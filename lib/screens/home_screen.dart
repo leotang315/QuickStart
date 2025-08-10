@@ -1,19 +1,15 @@
 import 'dart:io';
 import 'dart:math';
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:win32/win32.dart';
 import '../models/program.dart';
 import '../models/category.dart';
 import '../services/database_service.dart';
-import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/category_icon_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 
-import 'add_program_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -99,33 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 默认显示为文本
     return Text(iconIdentifier, style: TextStyle(fontSize: 16));
-  }
-
-  // 检查字符串是否为emoji
-  bool _isEmoji(String text) {
-    if (text.isEmpty) return false;
-
-    // 常见的emoji字符
-    final emojiList = [
-      '📱',
-      '📁',
-      '💼',
-      '🎮',
-      '🔧',
-      '🎵',
-      '🎨',
-      '📚',
-      '🏠',
-      '⚙️',
-    ];
-    if (emojiList.contains(text)) return true;
-
-    // 使用更广泛的Unicode范围检测emoji
-    final emojiRegex = RegExp(
-      r'[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]',
-      unicode: true,
-    );
-    return emojiRegex.hasMatch(text);
   }
 
   Future<void> _loadPrograms() async {
@@ -882,79 +851,14 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 头部区域
-                _buildHeader(
-                  isSidebarExpanded: _isSidebarExpanded,
-                  isSearchExpanded: _isSearchExpanded,
-                  searchController: _searchController,
-                  searchFocusNode: _searchFocusNode,
-                  onMenuTap: () {
-                    setState(() {
-                      _isSidebarExpanded = !_isSidebarExpanded;
-                    });
-                  },
-                  onSearchChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  onExpandSearch: () {
-                    setState(() {
-                      _isSearchExpanded = true;
-                    });
-                  },
-                  onCollapseSearch: () {
-                    setState(() {
-                      _isSearchExpanded = false;
-                    });
-                  },
-                ),
+                _buildHeader(),
                 Expanded(
                   child: Row(
                     children: [
                       // 侧边栏部分
-                      _buildSidebar(
-                        isSidebarExpanded: _isSidebarExpanded,
-                        categories: _categories,
-                        selectedCategory: _selectedCategory,
-                        onAddCategory: _showAddCategoryDialog,
-                        onDeleteCategory: _showDeleteCategoryDialog,
-                        onSiderbarExpanded: () {
-                          setState(() {
-                            _isSidebarExpanded = !_isSidebarExpanded;
-                          });
-                        },
-                        onCategorySelected: (category) {
-                          setState(() {
-                            _selectedCategory = category;
-                          });
-                        },
-
-                        buildCategoryItem: _buildCategoryItem,
-                      ),
+                      _buildSidebar(),
                       // 主内容区域
-                      _buildMainContent(
-                        filteredPrograms: _filteredPrograms,
-                        isDragging: _isDragging,
-                        launcherService: _launcherService,
-                        onFileDrop: _handleFileDrop,
-                        onDragEntered: () {
-                          setState(() {
-                            _isDragging = true;
-                          });
-                        },
-                        onDragExited: () {
-                          setState(() {
-                            _isDragging = false;
-                          });
-                        },
-                        onDeleteProgram: _deleteProgram,
-                        isEditMode: _isEditMode,
-                        onToggleEditMode: () {
-                          setState(() {
-                            _isEditMode = !_isEditMode;
-                          });
-                        },
-                      ),
+                      _buildMainContent(),
                     ],
                   ),
                 ),
@@ -976,16 +880,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 头部组件函数
-  Widget _buildHeader({
-    required bool isSidebarExpanded,
-    required bool isSearchExpanded,
-    required TextEditingController searchController,
-    required FocusNode searchFocusNode,
-    required VoidCallback onMenuTap,
-    required ValueChanged<String> onSearchChanged,
-    required VoidCallback onExpandSearch,
-    required VoidCallback onCollapseSearch,
-  }) {
+  Widget _buildHeader() {
     return Container(
       height: 60,
       width: double.infinity,
@@ -1017,46 +912,34 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           // 搜索框
-          buildSearchBar(
-            isSearchExpanded: isSearchExpanded,
-            searchController: searchController,
-            searchFocusNode: searchFocusNode,
-            onSearchChanged: onSearchChanged,
-            onExpandSearch: onExpandSearch,
-            onCollapseSearch: onCollapseSearch,
-          ),
+          _buildSearchBar(),
         ],
       ),
     );
   }
 
   // 搜索栏组件函数
-  Widget buildSearchBar({
-    required bool isSearchExpanded,
-    required TextEditingController searchController,
-    required FocusNode searchFocusNode,
-    required ValueChanged<String> onSearchChanged,
-    required VoidCallback onExpandSearch,
-    required VoidCallback onCollapseSearch,
-  }) {
+  Widget _buildSearchBar() {
     return AnimatedContainer(
       duration: Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: 60,
-      width: isSearchExpanded ? 250 : 60,
+      width: _isSearchExpanded ? 250 : 60,
       padding: EdgeInsets.symmetric(horizontal: 15),
 
       child: Row(
         children: [
-          if (!isSearchExpanded)
+          if (!_isSearchExpanded)
             Tooltip(
               message: '搜索程序',
               preferBelow: false,
               verticalOffset: 20,
               child: InkWell(
                 onTap: () {
-                  onExpandSearch();
-                  searchFocusNode.requestFocus();
+                  setState(() {
+                    _isSearchExpanded = true;
+                  });
+                  _searchFocusNode.requestFocus();
                 },
                 borderRadius: BorderRadius.circular(15),
                 child: Container(
@@ -1067,14 +950,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          if (isSearchExpanded)
+          if (_isSearchExpanded)
             Expanded(
               child: Row(
                 children: [
                   Expanded(
                     child: TextField(
-                      controller: searchController,
-                      focusNode: searchFocusNode,
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
                       decoration: InputDecoration(
                         hintText: '搜索程序...',
                         contentPadding: EdgeInsets.symmetric(
@@ -1095,14 +978,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         isDense: true,
                         suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: searchController,
+                          valueListenable: _searchController,
                           builder: (context, value, child) {
                             return value.text.isNotEmpty
                                 ? IconButton(
                                   icon: Icon(Icons.clear, size: 18),
                                   onPressed: () {
-                                    searchController.clear();
-                                    onSearchChanged('');
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
                                   },
                                 )
                                 : SizedBox.shrink();
@@ -1110,11 +995,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       style: TextStyle(fontSize: 14),
-                      onChanged: onSearchChanged,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                       onSubmitted: (value) {
                         if (value.isEmpty) {
-                          onCollapseSearch();
-                          searchFocusNode.unfocus();
+                          setState(() {
+                            _isSearchExpanded = false;
+                          });
+                          _searchFocusNode.unfocus();
                         }
                       },
                     ),
@@ -1128,28 +1019,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 侧边栏组件函数
-  Widget _buildSidebar({
-    required bool isSidebarExpanded,
-    required List<String> categories,
-    required String selectedCategory,
-    required ValueChanged<String> onCategorySelected,
-    required VoidCallback onAddCategory,
-    required ValueChanged<String> onDeleteCategory,
-    required VoidCallback onSiderbarExpanded,
-    required Widget Function({
-      required String category,
-      required String icon,
-      required bool isSelected,
-      required bool isSidebarExpanded,
-      required VoidCallback onTap,
-      VoidCallback? onDelete,
-    })
-    buildCategoryItem,
-  }) {
+  Widget _buildSidebar() {
     return MouseRegion(
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
-        width: isSidebarExpanded ? 220 : 60,
+        width: _isSidebarExpanded ? 220 : 60,
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -1163,30 +1037,30 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             // 汉堡菜单按钮
-            _buildExpandedButton(
-              isSidebarExpanded: isSidebarExpanded,
-              onTap: onSiderbarExpanded,
-            ),
+            _buildExpandedButton(),
 
             // 类别列表
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                itemCount: categories.length,
+                itemCount: _categories.length,
                 itemBuilder: (context, index) {
-                  final category = categories[index];
-                  final isSelected = selectedCategory == category;
+                  final category = _categories[index];
+                  final isSelected = _selectedCategory == category;
                   final icon = _getCategoryIcon(category);
 
-                  return buildCategoryItem(
+                  return _buildCategoryItem(
                     category: category,
                     icon: icon,
                     isSelected: isSelected,
-                    isSidebarExpanded: isSidebarExpanded,
-                    onTap: () => onCategorySelected(category),
+                    onTap: () {
+                      setState(() {
+                        _selectedCategory = category;
+                      });
+                    },
                     onDelete:
                         category != 'All'
-                            ? () => onDeleteCategory(category)
+                            ? () => _deleteCategory(category)
                             : null,
                   );
                 },
@@ -1194,10 +1068,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // 添加类别按钮
-            _buildAddCategoryButton(
-              isSidebarExpanded: isSidebarExpanded,
-              onTap: onAddCategory,
-            ),
+            _buildAddCategoryButton(),
           ],
         ),
       ),
@@ -1205,16 +1076,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 汉堡菜单按钮
-  Widget _buildExpandedButton({
-    required bool isSidebarExpanded,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildExpandedButton() {
     return Tooltip(
-      message: isSidebarExpanded ? '收起侧边栏' : '展开侧边栏',
+      message: _isSidebarExpanded ? '收起侧边栏' : '展开侧边栏',
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          setState(() {
+            _isSidebarExpanded = !_isSidebarExpanded;
+          });
+        },
         borderRadius: BorderRadius.circular(8),
         child: Container(
           height: 50,
@@ -1230,7 +1102,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 30,
                 alignment: Alignment.center,
                 child: Icon(
-                  isSidebarExpanded ? Icons.menu_open : Icons.menu,
+                  _isSidebarExpanded ? Icons.menu_open : Icons.menu,
                   color: Color(0xFF6C757D),
                 ),
               ),
@@ -1246,7 +1118,6 @@ class _HomeScreenState extends State<HomeScreen> {
     required String category,
     required String icon,
     required bool isSelected,
-    required bool isSidebarExpanded,
     required VoidCallback onTap,
     VoidCallback? onDelete,
   }) {
@@ -1296,12 +1167,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _buildCategoryIconWidget(icon),
                   ),
                   Flexible(
-                    child: AnimatedOpacity(
-                      opacity: isSidebarExpanded ? 1.0 : 0.0,
-                      duration: Duration(milliseconds: 200),
+                child: AnimatedOpacity(
+                  opacity: _isSidebarExpanded ? 1.0 : 0.0,
+                  duration: Duration(milliseconds: 200),
                       child: Padding(
                         padding: EdgeInsets.only(
-                          left: isSidebarExpanded ? 12 : 0,
+                          left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
                           category,
@@ -1360,16 +1231,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 添加类别按钮组件函数
-  Widget _buildAddCategoryButton({
-    required bool isSidebarExpanded,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildAddCategoryButton() {
     return Tooltip(
       message: '添加新类别',
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
-        onTap: onTap,
+        onTap: _showAddCategoryDialog,
         child: Container(
           height: 50,
           padding: EdgeInsets.symmetric(horizontal: 15),
@@ -1386,7 +1254,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Flexible(
                 child: AnimatedOpacity(
-                  opacity: isSidebarExpanded ? 1.0 : 0.0,
+                  opacity: _isSidebarExpanded ? 1.0 : 0.0,
                   duration: Duration(milliseconds: 200),
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
@@ -1407,17 +1275,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 主内容区域组件函数
-  Widget _buildMainContent({
-    required List<Program> filteredPrograms,
-    required bool isDragging,
-    required LauncherService launcherService,
-    required Function(DropDoneDetails) onFileDrop,
-    required VoidCallback onDragEntered,
-    required VoidCallback onDragExited,
-    required Function(Program) onDeleteProgram,
-    required bool isEditMode,
-    required VoidCallback onToggleEditMode,
-  }) {
+  Widget _buildMainContent() {
     return Expanded(
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
@@ -1429,9 +1287,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Color(0xFFF8F9FA),
                 padding: EdgeInsets.all(8),
                 child: DropTarget(
-                  onDragDone: onFileDrop,
-                  onDragEntered: (detail) => onDragEntered(),
-                  onDragExited: (detail) => onDragExited(),
+                  onDragDone: _handleFileDrop,
+                  onDragEntered: (detail) {
+                    setState(() {
+                      _isDragging = true;
+                    });
+                  },
+                  onDragExited: (detail) {
+                    setState(() {
+                      _isDragging = false;
+                    });
+                  },
                   child: Container(
                     padding: EdgeInsets.all(8),
                     width: double.infinity,
@@ -1440,14 +1306,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color:
-                            isDragging ? Color(0xFF2196F3) : Colors.transparent,
-                        width: 2,
-                        style:
-                            isDragging ? BorderStyle.solid : BorderStyle.none,
+                          _isDragging ? Color(0xFF2196F3) : Colors.transparent,
+                      width: 2,
+                      style:
+                          _isDragging ? BorderStyle.solid : BorderStyle.none,
                       ),
                     ),
                     child:
-                        filteredPrograms.isEmpty
+                        _filteredPrograms.isEmpty
                             ? Center(
                               child: Text(
                                 '暂无程序\n拖拽程序文件到此区域添加',
@@ -1463,19 +1329,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                 spacing: 16,
                                 runSpacing: 16,
                                 children:
-                                    filteredPrograms.map((program) {
+                                    _filteredPrograms.map((program) {
                                       return SizedBox(
                                         width: 120,
                                         height: 120,
                                         child: ProgramTile(
                                           program: program,
-                                          launcherService: launcherService,
+                                          launcherService: _launcherService,
                                           onDelete:
-                                              () => onDeleteProgram(program),
-                                          isEditMode: isEditMode,
+                                              () => _deleteProgram(program),
+                                          isEditMode: _isEditMode,
                                           onLongPress: () {
-                                            if (!isEditMode) {
-                                              onToggleEditMode();
+                                            if (!_isEditMode) {
+                                              setState(() {
+                                                _isEditMode = !_isEditMode;
+                                              });
                                             }
                                           },
                                         ),
