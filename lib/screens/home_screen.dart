@@ -1361,6 +1361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                               });
                                             }
                                           },
+                                          onCategoryChanged: () {
+                                            _loadPrograms(); // 重新加载程序列表
+                                          },
                                         ),
                                       );
                                     }).toList(),
