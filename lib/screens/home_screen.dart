@@ -12,7 +12,7 @@ import '../services/launcher_service.dart';
 import '../services/category_icon_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
-import '../widgets/category_icon_selector.dart';
+
 import 'add_program_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -85,10 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 构建类别图标Widget
   Widget _buildCategoryIconWidget(String iconIdentifier) {
+    print("object $iconIdentifier");
     // 如果是emoji字符（如📱、📁），直接显示
-    if (_isEmoji(iconIdentifier)) {
-      return Text(iconIdentifier, style: TextStyle(fontSize: 16));
-    }
+    // if (_isEmoji(iconIdentifier)) {
+    //   return Text(iconIdentifier, style: TextStyle(fontSize: 16));
+    // }
 
     // 如果是CategoryIcon名称，查找对应的图标
     final categoryIcon = CategoryIconService.getIconByName(iconIdentifier);
@@ -250,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 16,
             child: Container(
               width: 400,
-              padding: EdgeInsets.all(24),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -339,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      SizedBox(height: 20),
+                      SizedBox(height: 16),
                       Text(
                         '类别图标',
                         style: TextStyle(
@@ -350,170 +351,133 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: 8),
                       StatefulBuilder(
-                        builder:
-                            (context, setDialogState) => Container(
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Color(0xFFF8F9FA),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Color(0xFFE1E5E9),
-                                  width: 1,
+                        builder: (context, setDialogState) => Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Color(0xFFF8F9FA),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Color(0xFFE1E5E9),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 当前选中的图标显示
+                              if (selectedIconName != null) ...
+                              [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Color(0xFF0078D4).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: Color(0xFF0078D4),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        selectedIcon,
+                                        color: Color(0xFF0078D4),
+                                        size: 16,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      selectedIconName!,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF1F1F1F),
+                                      ),
+                                    ),
+                                    Spacer(),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setDialogState(() {
+                                          selectedIconName = null;
+                                          selectedIcon = null;
+                                        });
+                                      },
+                                      child: Container(
+                                        padding: EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Color(0xFF6C757D).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 14,
+                                          color: Color(0xFF6C757D),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 12),
+                              ],
+                              // 图标网格
+                              Container(
+                                height: 140,
+                                child: SingleChildScrollView(
+                                  child: GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 8,
+                                      crossAxisSpacing: 6,
+                                      mainAxisSpacing: 6,
+                                      childAspectRatio: 1,
+                                    ),
+                                    itemCount: CategoryIconService.categoryIcons.length,
+                                    itemBuilder: (context, index) {
+                                      final categoryIcon = CategoryIconService.categoryIcons[index];
+                                      final isSelected = selectedIconName == categoryIcon.name;
+                                      
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setDialogState(() {
+                                            selectedIconName = categoryIcon.name;
+                                            selectedIcon = categoryIcon.icon;
+                                          });
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: isSelected 
+                                                ? Color(0xFF0078D4).withOpacity(0.1)
+                                                : Colors.white,
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: isSelected 
+                                                  ? Color(0xFF0078D4)
+                                                  : Color(0xFFE1E5E9),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            categoryIcon.icon,
+                                            size: 16,
+                                            color: isSelected 
+                                                ? Color(0xFF0078D4)
+                                                : Color(0xFF6C757D),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: Color(0xFFE1E5E9),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child:
-                                            selectedIcon != null
-                                                ? Icon(
-                                                  selectedIcon,
-                                                  color: Color(0xFF0078D4),
-                                                  size: 20,
-                                                )
-                                                : Icon(
-                                                  Icons.category,
-                                                  color: Color(0xFF9E9E9E),
-                                                  size: 20,
-                                                ),
-                                      ),
-                                      SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              selectedIconName ?? '未选择图标',
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w500,
-                                                color:
-                                                    selectedIconName != null
-                                                        ? Color(0xFF1F1F1F)
-                                                        : Color(0xFF9E9E9E),
-                                              ),
-                                            ),
-                                            if (selectedIconName == null)
-                                              Text(
-                                                '点击下方按钮选择图标',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Color(0xFF9E9E9E),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () {
-                                            showCategoryIconSelector(
-                                              context: context,
-                                              selectedIconName:
-                                                  selectedIconName,
-                                              onIconSelected: (iconName) {
-                                                setDialogState(() {
-                                                  selectedIconName = iconName;
-                                                  if (iconName != null) {
-                                                    final categoryIcon =
-                                                        CategoryIconService.getIconByName(
-                                                          iconName,
-                                                        );
-                                                    selectedIcon =
-                                                        categoryIcon?.icon;
-                                                  } else {
-                                                    selectedIcon = null;
-                                                  }
-                                                });
-                                              },
-                                            );
-                                          },
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Color(0xFF0078D4),
-                                            side: BorderSide(
-                                              color: Color(0xFF0078D4),
-                                              width: 1,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '选择图标',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      if (selectedIconName != null) ...[
-                                        SizedBox(width: 8),
-                                        OutlinedButton(
-                                          onPressed: () {
-                                            setDialogState(() {
-                                              selectedIconName = null;
-                                              selectedIcon = null;
-                                            });
-                                          },
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Color(0xFF6C757D),
-                                            side: BorderSide(
-                                              color: Color(0xFFE1E5E9),
-                                              width: 1,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '清除',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 32),
+                  SizedBox(height: 20),
                   // 按钮区域
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -567,9 +531,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   newCategory,
                                 );
 
+                                // 重新加载数据以更新_categoryData
+                                await _loadPrograms();
+
                                 // 更新UI
                                 setState(() {
-                                  _categories.add(name);
+                                  if (!_categories.contains(name)) {
+                                    _categories.add(name);
+                                  }
                                 });
 
                                 Navigator.pop(context);
@@ -1288,8 +1257,6 @@ class _HomeScreenState extends State<HomeScreen> {
             onLongPress: () {
               if (onDelete != null && category != 'All') {
                 setState(() {
-                  print("删除类别：$category");
-
                   _isEditMode = true;
                   _isCategoryEditMode = true;
                   _categoryToDelete = category;
