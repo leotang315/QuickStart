@@ -11,6 +11,7 @@ import '../services/category_icon_service.dart';
 import '../services/language_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
+import '../widgets/custom_title_bar.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -42,6 +43,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isCategoryEditMode = false;
   String? _categoryToDelete;
+
+  // 语言切换方法
+  void _changeLanguage(String languageCode) {
+    widget.onLanguageChanged(Locale(languageCode));
+  }
 
   @override
   void initState() {
@@ -854,6 +860,11 @@ class _HomeScreenState extends State<HomeScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 自定义标题栏
+                CustomTitleBar(
+                  title: AppLocalizations.of(context)!.appTitle,
+                  onLanguageChange: _changeLanguage,
+                ),
                 // 头部区域
                 _buildHeader(),
                 Expanded(
@@ -900,20 +911,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Row(
         children: [
-          // 标题区域
+          // 占位区域
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              alignment: Alignment.center,
-              child: Text(
-                'QuickStart',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF212529),
-                ),
-              ),
-            ),
+            child: Container(),
           ),
           // 搜索框
           _buildSearchBar(),
@@ -1073,9 +1073,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // 添加类别按钮
             _buildAddCategoryButton(),
-            
-            // 语言切换按钮
-            _buildLanguageSwitcher(),
+
           ],
         ),
       ),
@@ -1386,75 +1384,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 语言切换器组件
-  Widget _buildLanguageSwitcher() {
-    return Container(
-      padding: EdgeInsets.all(8),
-      child: _isSidebarExpanded
-          ? PopupMenuButton<String>(
-              onSelected: (String languageCode) {
-                final locale = Locale(languageCode);
-                widget.onLanguageChanged(locale);
-              },
-              itemBuilder: (BuildContext context) => [
-                PopupMenuItem<String>(
-                  value: 'zh',
-                  child: Row(
-                    children: [
-                      Text('🇨🇳'),
-                      SizedBox(width: 8),
-                      Text('中文 (简体)'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'en',
-                  child: Row(
-                    children: [
-                      Text('🇺🇸'),
-                      SizedBox(width: 8),
-                      Text('English'),
-                    ],
-                  ),
-                ),
-              ],
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Color(0xFFF8F9FA),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Color(0xFFE1E5E9)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.language, size: 16, color: Color(0xFF6C757D)),
-                    SizedBox(width: 8),
-                    Text(
-                      Localizations.localeOf(context).languageCode == 'zh' ? '中文' : 'English',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6C757D),
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF6C757D)),
-                  ],
-                ),
-              ),
-            )
-          : Tooltip(
-              message: 'Language / 语言',
-              child: IconButton(
-                onPressed: () {
-                  // 在收起状态下点击切换语言
-                  final currentLocale = Localizations.localeOf(context).languageCode;
-                  final newLocale = currentLocale == 'zh' ? 'en' : 'zh';
-                  widget.onLanguageChanged(Locale(newLocale));
-                },
-                icon: Icon(Icons.language, size: 20, color: Color(0xFF6C757D)),
-              ),
-            ),
-    );
   }
-}

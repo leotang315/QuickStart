@@ -1,5 +1,5 @@
 {
-  "appTitle": "QuickStart",
+  "appTitle": "Beta启动",
   "windowTitle": "程序快速启动器",
   "searchHint": "搜索程序...",
   "searchTooltip": "搜索程序",
@@ -49,6 +49,11 @@
       }
     }
   },
+  "languageToggle": "Language / 语言",
+  "minimize": "最小化",
+  "maximize": "最大化",
+  "restore": "还原",
+  "close": "关闭",
   "changeCategoryFailed": "更改类别失败: {error}",
   "@changeCategoryFailed": {
     "placeholders": {

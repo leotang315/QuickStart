@@ -12,11 +12,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 初始化 sqflite_ffi
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
-  
+
   // 初始化窗口管理器
   await windowManager.ensureInitialized();
   WindowOptions windowOptions = WindowOptions(
@@ -24,15 +24,17 @@ void main() async {
     center: true,
     title: '程序快速启动器',
     minimumSize: Size(400, 300),
+    windowButtonVisibility: false,
+    titleBarStyle: TitleBarStyle.hidden,
   );
   await windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
   });
-  
+
   // 初始化热键管理器
   await hotKeyManager.unregisterAll();
-  
+
   runApp(const MyApp());
 }
 

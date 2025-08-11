@@ -1,5 +1,5 @@
 {
-  "appTitle": "QuickStart",
+  "appTitle": "BetaStart",
   "windowTitle": "Program Quick Launcher",
   "searchHint": "Search programs...",
   "searchTooltip": "Search programs",
@@ -48,6 +48,11 @@
     }
   },
   "addCategoryFailed": "Failed to add category: {error}",
+  "languageToggle": "Language / 语言",
+  "minimize": "Minimize",
+  "maximize": "Maximize",
+  "restore": "Restore",
+  "close": "Close",
   "@addCategoryFailed": {
     "placeholders": {
       "error": {
