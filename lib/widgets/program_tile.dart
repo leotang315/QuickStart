@@ -295,7 +295,8 @@ class _ProgramTileState extends State<ProgramTile> {
     ).then((value) {
       if (value != null) {
         if (value == 'delete') {
-          _showDeleteConfirmDialog();
+          //_showDeleteConfirmDialog();
+           widget.onDelete?.call();
         } else if (value.toString().startsWith('category_')) {
           final categoryValue = value.toString().substring(9); // 移除 'category_' 前缀
           if (categoryValue == 'none') {
@@ -355,40 +356,4 @@ class _ProgramTileState extends State<ProgramTile> {
     }
   }
 
-  void _showDeleteConfirmDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.warning, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('确认删除'),
-            ],
-          ),
-          content: Text('确定要删除程序 "${widget.program.name}" 吗？\n\n此操作无法撤销。'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                widget.onDelete?.call();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('删除'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
