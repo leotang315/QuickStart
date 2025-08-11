@@ -1,0 +1,112 @@
+{
+  "appTitle": "QuickStart",
+  "windowTitle": "Program Quick Launcher",
+  "searchHint": "Search programs...",
+  "searchTooltip": "Search programs",
+  "addProgramTooltip": "Add program",
+  "collapseSidebar": "Collapse sidebar",
+  "expandSidebar": "Expand sidebar",
+  "addNewCategory": "Add New Category",
+  "categoryName": "Category Name",
+  "categoryNameHint": "Enter category name",
+  "categoryIcon": "Category Icon",
+  "cancel": "Cancel",
+  "add": "Add",
+  "delete": "Delete",
+  "confirmDeleteCategory": "Confirm Delete Category",
+  "deleteCategoryMessage": "Are you sure you want to delete category \"{categoryName}\"?",
+  "@deleteCategoryMessage": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteCategoryWarning": "This operation will also delete all shortcuts in this category and cannot be undone.",
+  "programDeleted": "Program \"{programName}\" has been deleted",
+  "@programDeleted": {
+    "placeholders": {
+      "programName": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "Delete failed: {error}",
+  "@deleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryAddSuccess": "Category \"{categoryName}\" added successfully",
+  "@categoryAddSuccess": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "addCategoryFailed": "Failed to add category: {error}",
+  "@addCategoryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "categoryDeletedWithPrograms": "Category \"{categoryName}\" and its {count} programs have been deleted",
+  "@categoryDeletedWithPrograms": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cannotDeleteAllCategory": "Cannot delete \"All\" category",
+  "addingPrograms": "Adding programs...",
+  "programsAddedSuccess": "Successfully added {count} programs",
+  "@programsAddedSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addProgramsFailed": "Failed to add programs, please check file format",
+  "all": "All",
+  "noProgramsMessage": "No programs\nDrag program files to this area to add",
+  "delete": "Delete",
+  "changeCategory": "Change Category",
+  "noCategory": "No Category",
+  "programMovedToCategory": "Program \"{programName}\" moved to category \"{categoryName}\"",
+  "@programMovedToCategory": {
+    "placeholders": {
+      "programName": {
+        "type": "String"
+      },
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "programRemovedFromCategory": "Program \"{programName}\" removed from category",
+  "@programRemovedFromCategory": {
+    "placeholders": {
+      "programName": {
+        "type": "String"
+      }
+    }
+  },
+  "changeCategoryFailed": "Failed to change category: {error}",
+  "@changeCategoryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
+}

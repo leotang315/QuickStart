@@ -2,17 +2,21 @@ import 'dart:io';
 import 'dart:math';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/program.dart';
 import '../models/category.dart';
 import '../services/database_service.dart';
 import '../services/launcher_service.dart';
 import '../services/category_icon_service.dart';
+import '../services/language_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(Locale) onLanguageChanged;
+  
+  const HomeScreen({super.key, required this.onLanguageChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -127,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除成功提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('程序 "${program.name}" 已删除'),
+          content: Text(AppLocalizations.of(context)!.programDeleted(program.name)),
           duration: Duration(seconds: 2),
         ),
       );
@@ -135,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除失败提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('删除失败: $e'),
+          content: Text(AppLocalizations.of(context)!.deleteFailed(e.toString())),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -176,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除成功提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('类别 "$category" 及其下的 $programCount 个程序已删除'),
+          content: Text(AppLocalizations.of(context)!.categoryDeletedWithPrograms(category, programCount)),
           duration: Duration(seconds: 3),
         ),
       );
@@ -253,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        '添加新类别',
+                        AppLocalizations.of(context)!.addNewCategory,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -268,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '类别名称',
+                        AppLocalizations.of(context)!.categoryName,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -279,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       TextField(
                         controller: categoryNameController,
                         decoration: InputDecoration(
-                          hintText: '请输入类别名称',
+                          hintText: AppLocalizations.of(context)!.categoryNameHint,
                           filled: true,
                           fillColor: Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
@@ -311,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        '类别图标',
+                        AppLocalizations.of(context)!.categoryIcon,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -471,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: Text(
-                            '取消',
+                            AppLocalizations.of(context)!.cancel,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -515,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // 显示成功提示
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('类别 "$name" 添加成功'),
+                                    content: Text(AppLocalizations.of(context)!.categoryAddSuccess(name)),
                                     backgroundColor: Colors.green,
                                     duration: Duration(seconds: 2),
                                   ),
@@ -524,7 +528,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // 显示错误提示
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('添加类别失败: $e'),
+                                    content: Text(AppLocalizations.of(context)!.addCategoryFailed(e.toString())),
                                     backgroundColor: Colors.red,
                                     duration: Duration(seconds: 3),
                                   ),
@@ -545,7 +549,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: Text(
-                            '添加',
+                            AppLocalizations.of(context)!.add,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -566,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (category == 'All') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('无法删除"全部"类别'),
+          content: Text(AppLocalizations.of(context)!.cannotDeleteAllCategory),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 2),
         ),
@@ -617,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        '确认删除类别',
+                        AppLocalizations.of(context)!.confirmDeleteCategory,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -629,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(height: 20),
                   // Content
                   Text(
-                    '确定要删除类别 "$category" 吗？',
+                    AppLocalizations.of(context)!.deleteCategoryMessage(category),
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xFF374151),
@@ -638,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '此操作将同时删除该类别下的所有快捷图标，且无法撤销。',
+                    AppLocalizations.of(context)!.deleteCategoryWarning,
                     style: TextStyle(
                       fontSize: 13,
                       color: Color(0xFF6B7280),
@@ -735,7 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
       //         children: [
       //           CircularProgressIndicator(),
       //           SizedBox(width: 16),
-      //           Text("正在添加程序..."),
+      //           Text(AppLocalizations.of(context)!.addingPrograms),
       //         ],
       //       ),
       //     );
@@ -831,8 +835,8 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(
           content: Text(
             successCount > 0
-                ? "成功添加 $successCount 个程序${failedFiles.isNotEmpty ? '，${failedFiles.length} 个添加失败' : ''}"
-                : "添加失败，请检查文件格式",
+                ? AppLocalizations.of(context)!.programsAddedSuccess(successCount)
+        : AppLocalizations.of(context)!.addProgramsFailed,
           ),
           duration: Duration(seconds: 3),
         ),
@@ -872,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAnimatedOverlay,
-          tooltip: '添加程序',
+          tooltip: AppLocalizations.of(context)!.addProgramTooltip,
           child: Icon(Icons.add),
         ),
       ),
@@ -931,7 +935,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (!_isSearchExpanded)
             Tooltip(
-              message: '搜索程序',
+              message: AppLocalizations.of(context)!.searchTooltip,
               preferBelow: false,
               verticalOffset: 20,
               child: InkWell(
@@ -959,7 +963,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       decoration: InputDecoration(
-                        hintText: '搜索程序...',
+                        hintText: AppLocalizations.of(context)!.searchHint,
                         contentPadding: EdgeInsets.symmetric(
                           vertical: 8,
                           horizontal: 12,
@@ -1069,6 +1073,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // 添加类别按钮
             _buildAddCategoryButton(),
+            
+            // 语言切换按钮
+            _buildLanguageSwitcher(),
           ],
         ),
       ),
@@ -1078,7 +1085,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 汉堡菜单按钮
   Widget _buildExpandedButton() {
     return Tooltip(
-      message: _isSidebarExpanded ? '收起侧边栏' : '展开侧边栏',
+      message: _isSidebarExpanded ? AppLocalizations.of(context)!.collapseSidebar : AppLocalizations.of(context)!.expandSidebar,
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
@@ -1190,7 +1197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
-                          category,
+                          category == 'All' ? AppLocalizations.of(context)!.all : category,
                           overflow: TextOverflow.clip,
                           maxLines: 1,
                           style: TextStyle(
@@ -1248,7 +1255,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 添加类别按钮组件函数
   Widget _buildAddCategoryButton() {
     return Tooltip(
-      message: '添加新类别',
+      message: AppLocalizations.of(context)!.addNewCategory,
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
@@ -1331,7 +1338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _filteredPrograms.isEmpty
                             ? Center(
                               child: Text(
-                                '暂无程序\n拖拽程序文件到此区域添加',
+                                AppLocalizations.of(context)!.noProgramsMessage,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color(0xFF6C757D),
@@ -1376,6 +1383,78 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // 语言切换器组件
+  Widget _buildLanguageSwitcher() {
+    return Container(
+      padding: EdgeInsets.all(8),
+      child: _isSidebarExpanded
+          ? PopupMenuButton<String>(
+              onSelected: (String languageCode) {
+                final locale = Locale(languageCode);
+                widget.onLanguageChanged(locale);
+              },
+              itemBuilder: (BuildContext context) => [
+                PopupMenuItem<String>(
+                  value: 'zh',
+                  child: Row(
+                    children: [
+                      Text('🇨🇳'),
+                      SizedBox(width: 8),
+                      Text('中文 (简体)'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'en',
+                  child: Row(
+                    children: [
+                      Text('🇺🇸'),
+                      SizedBox(width: 8),
+                      Text('English'),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Color(0xFFF8F9FA),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Color(0xFFE1E5E9)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.language, size: 16, color: Color(0xFF6C757D)),
+                    SizedBox(width: 8),
+                    Text(
+                      Localizations.localeOf(context).languageCode == 'zh' ? '中文' : 'English',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6C757D),
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_drop_down, size: 16, color: Color(0xFF6C757D)),
+                  ],
+                ),
+              ),
+            )
+          : Tooltip(
+              message: 'Language / 语言',
+              child: IconButton(
+                onPressed: () {
+                  // 在收起状态下点击切换语言
+                  final currentLocale = Localizations.localeOf(context).languageCode;
+                  final newLocale = currentLocale == 'zh' ? 'en' : 'zh';
+                  widget.onLanguageChanged(Locale(newLocale));
+                },
+                icon: Icon(Icons.language, size: 20, color: Color(0xFF6C757D)),
+              ),
+            ),
     );
   }
 }

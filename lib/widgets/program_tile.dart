@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/program.dart';
 import '../services/icon_service.dart';
@@ -167,7 +168,7 @@ class _ProgramTileState extends State<ProgramTile> {
               Icon(Icons.category, size: 14, color: Colors.blue[600]),
               SizedBox(width: 6),
               Text(
-                '更改类别',
+                AppLocalizations.of(context)!.changeCategory,
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.blue[600],
@@ -193,7 +194,7 @@ class _ProgramTileState extends State<ProgramTile> {
               Icon(Icons.clear, size: 16, color: Colors.grey[600]),
               SizedBox(width: 8),
               Text(
-                '无类别',
+                AppLocalizations.of(context)!.noCategory,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.black87,
@@ -265,7 +266,7 @@ class _ProgramTileState extends State<ProgramTile> {
             Icon(Icons.delete, size: 16, color: Colors.red[600]),
             SizedBox(width: 8),
             Text(
-              '删除',
+              AppLocalizations.of(context)!.delete,
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.red[600],
@@ -334,8 +335,8 @@ class _ProgramTileState extends State<ProgramTile> {
         SnackBar(
           content: Text(
             newCategory != null 
-                ? '程序 "${widget.program.name}" 已移动到类别 "$newCategory"'
-                : '程序 "${widget.program.name}" 已移除类别分类'
+                ? AppLocalizations.of(context)!.programMovedToCategory(widget.program.name, newCategory)
+                : AppLocalizations.of(context)!.programRemovedFromCategory(widget.program.name)
           ),
           duration: Duration(seconds: 2),
         ),
@@ -348,7 +349,7 @@ class _ProgramTileState extends State<ProgramTile> {
       // 显示错误提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('更改类别失败: $e'),
+          content: Text(AppLocalizations.of(context)!.changeCategoryFailed(e.toString())),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),

@@ -1,0 +1,60 @@
+{
+  "appTitle": "QuickStart",
+  "windowTitle": "程序快速启动器",
+  "searchHint": "搜索程序...",
+  "searchTooltip": "搜索程序",
+  "addProgramTooltip": "添加程序",
+  "collapseSidebar": "收起侧边栏",
+  "expandSidebar": "展开侧边栏",
+  "addNewCategory": "添加新类别",
+  "categoryName": "类别名称",
+  "categoryNameHint": "请输入类别名称",
+  "categoryIcon": "类别图标",
+  "cancel": "取消",
+  "add": "添加",
+  "delete": "删除",
+  "confirmDeleteCategory": "确认删除类别",
+  "deleteCategoryMessage": "确定要删除类别 \"{categoryName}\" 吗？",
+  "deleteCategoryWarning": "此操作将同时删除该类别下的所有快捷图标，且无法撤销。",
+  "programDeleted": "程序 \"{programName}\" 已删除",
+  "deleteFailed": "删除失败: {error}",
+  "categoryAddSuccess": "类别 \"{categoryName}\" 添加成功",
+  "addCategoryFailed": "添加类别失败: {error}",
+  "categoryDeletedWithPrograms": "类别 \"{categoryName}\" 及其下的 {count} 个程序已删除",
+  "cannotDeleteAllCategory": "无法删除\"全部\"类别",
+  "addingPrograms": "正在添加程序...",
+  "programsAddedSuccess": "成功添加 {count} 个程序",
+  "addProgramsFailed": "添加失败，请检查文件格式",
+  "all": "全部",
+  "noProgramsMessage": "暂无程序\n拖拽程序文件到此区域添加",
+  "delete": "删除",
+  "changeCategory": "更改类别",
+  "noCategory": "无类别",
+  "programMovedToCategory": "程序 \"{programName}\" 已移动到类别 \"{categoryName}\"",
+  "@programMovedToCategory": {
+    "placeholders": {
+      "programName": {
+        "type": "String"
+      },
+      "categoryName": {
+        "type": "String"
+      }
+    }
+  },
+  "programRemovedFromCategory": "程序 \"{programName}\" 已移除类别分类",
+  "@programRemovedFromCategory": {
+    "placeholders": {
+      "programName": {
+        "type": "String"
+      }
+    }
+  },
+  "changeCategoryFailed": "更改类别失败: {error}",
+  "@changeCategoryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
+}
