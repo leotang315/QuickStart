@@ -113,33 +113,25 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
   }
 
   Widget _buildLanguageButton() {
-    return Tooltip(
-      message: "abc",
-        child: PopupMenuButton<String>(
-          onSelected: (String languageCode) {
-            widget.onLanguageChange?.call(languageCode);
-          },
-          itemBuilder: (BuildContext context) => [
+    return PopupMenuButton<String>(
+      tooltip: AppLocalizations.of(context)!.languageToggle,
+      onSelected: (String languageCode) {
+        widget.onLanguageChange?.call(languageCode);
+      },
+      itemBuilder:
+          (BuildContext context) => [
             PopupMenuItem<String>(
               value: 'zh',
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🇨🇳'),
-                  SizedBox(width: 8),
-                  Text('中文 (简体)'),
-                ],
+                children: [Text('🇨🇳'), SizedBox(width: 8), Text('中文 (简体)')],
               ),
             ),
             PopupMenuItem<String>(
               value: 'en',
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🇺🇸'),
-                  SizedBox(width: 8),
-                  Text('English'),
-                ],
+                children: [Text('🇺🇸'), SizedBox(width: 8), Text('English')],
               ),
             ),
           ],
@@ -149,8 +141,6 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
         height: 32,
         child: Icon(Icons.language, size: 16, color: Color(0xFF6C757D)),
       ),
-
-       ),
     );
   }
 
