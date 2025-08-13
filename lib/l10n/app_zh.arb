@@ -55,6 +55,7 @@
   "restore": "还原",
   "close": "关闭",
   "changeCategoryFailed": "更改类别失败: {error}",
+  "category": "类别",
   "@changeCategoryFailed": {
     "placeholders": {
       "error": {

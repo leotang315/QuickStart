@@ -13,10 +13,9 @@ import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 import '../widgets/custom_title_bar.dart';
 
-
 class HomeScreen extends StatefulWidget {
   final Function(Locale) onLanguageChanged;
-  
+
   const HomeScreen({super.key, required this.onLanguageChanged});
 
   @override
@@ -137,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除成功提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.programDeleted(program.name)),
+          content: Text(
+            AppLocalizations.of(context)!.programDeleted(program.name),
+          ),
           duration: Duration(seconds: 2),
         ),
       );
@@ -145,7 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除失败提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.deleteFailed(e.toString())),
+          content: Text(
+            AppLocalizations.of(context)!.deleteFailed(e.toString()),
+          ),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -186,7 +189,11 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除成功提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.categoryDeletedWithPrograms(category, programCount)),
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.categoryDeletedWithPrograms(category, programCount),
+          ),
           duration: Duration(seconds: 3),
         ),
       );
@@ -289,7 +296,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       TextField(
                         controller: categoryNameController,
                         decoration: InputDecoration(
-                          hintText: AppLocalizations.of(context)!.categoryNameHint,
+                          hintText:
+                              AppLocalizations.of(context)!.categoryNameHint,
                           filled: true,
                           fillColor: Color(0xFFF8F9FA),
                           border: OutlineInputBorder(
@@ -330,129 +338,152 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: 8),
                       StatefulBuilder(
-                        builder: (context, setDialogState) => Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Color(0xFFE1E5E9),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 当前选中的图标显示
-                              if (selectedIconName != null) ...
-                              [
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFF0078D4).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: Color(0xFF0078D4),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        selectedIcon,
-                                        color: Color(0xFF0078D4),
-                                        size: 16,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      selectedIconName!,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Color(0xFF1F1F1F),
-                                      ),
-                                    ),
-                                    Spacer(),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setDialogState(() {
-                                          selectedIconName = null;
-                                          selectedIcon = null;
-                                        });
-                                      },
-                                      child: Container(
-                                        padding: EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: Color(0xFF6C757D).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          size: 14,
-                                          color: Color(0xFF6C757D),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                        builder:
+                            (context, setDialogState) => Container(
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Color(0xFFF8F9FA),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Color(0xFFE1E5E9),
+                                  width: 1,
                                 ),
-                                SizedBox(height: 12),
-                              ],
-                              // 图标网格
-                              Container(
-                                height: 140,
-                                child: SingleChildScrollView(
-                                  child: GridView.builder(
-                                    shrinkWrap: true,
-                                    physics: NeverScrollableScrollPhysics(),
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 8,
-                                      crossAxisSpacing: 6,
-                                      mainAxisSpacing: 6,
-                                      childAspectRatio: 1,
-                                    ),
-                                    itemCount: CategoryIconService.categoryIcons.length,
-                                    itemBuilder: (context, index) {
-                                      final categoryIcon = CategoryIconService.categoryIcons[index];
-                                      final isSelected = selectedIconName == categoryIcon.name;
-                                      
-                                      return GestureDetector(
-                                        onTap: () {
-                                          setDialogState(() {
-                                            selectedIconName = categoryIcon.name;
-                                            selectedIcon = categoryIcon.icon;
-                                          });
-                                        },
-                                        child: Container(
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // 当前选中的图标显示
+                                  if (selectedIconName != null) ...[
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
                                           decoration: BoxDecoration(
-                                            color: isSelected 
-                                                ? Color(0xFF0078D4).withOpacity(0.1)
-                                                : Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
+                                            color: Color(
+                                              0xFF0078D4,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                             border: Border.all(
-                                              color: isSelected 
-                                                  ? Color(0xFF0078D4)
-                                                  : Color(0xFFE1E5E9),
+                                              color: Color(0xFF0078D4),
                                               width: 1,
                                             ),
                                           ),
                                           child: Icon(
-                                            categoryIcon.icon,
+                                            selectedIcon,
+                                            color: Color(0xFF0078D4),
                                             size: 16,
-                                            color: isSelected 
-                                                ? Color(0xFF0078D4)
-                                                : Color(0xFF6C757D),
                                           ),
                                         ),
-                                      );
-                                    },
+                                        SizedBox(width: 8),
+                                        Text(
+                                          selectedIconName!,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xFF1F1F1F),
+                                          ),
+                                        ),
+                                        Spacer(),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setDialogState(() {
+                                              selectedIconName = null;
+                                              selectedIcon = null;
+                                            });
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Color(
+                                                0xFF6C757D,
+                                              ).withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Icon(
+                                              Icons.close,
+                                              size: 14,
+                                              color: Color(0xFF6C757D),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                  ],
+                                  // 图标网格
+                                  Container(
+                                    height: 140,
+                                    child: SingleChildScrollView(
+                                      child: GridView.builder(
+                                        shrinkWrap: true,
+                                        physics: NeverScrollableScrollPhysics(),
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 8,
+                                              crossAxisSpacing: 6,
+                                              mainAxisSpacing: 6,
+                                              childAspectRatio: 1,
+                                            ),
+                                        itemCount:
+                                            CategoryIconService
+                                                .categoryIcons
+                                                .length,
+                                        itemBuilder: (context, index) {
+                                          final categoryIcon =
+                                              CategoryIconService
+                                                  .categoryIcons[index];
+                                          final isSelected =
+                                              selectedIconName ==
+                                              categoryIcon.name;
+
+                                          return GestureDetector(
+                                            onTap: () {
+                                              setDialogState(() {
+                                                selectedIconName =
+                                                    categoryIcon.name;
+                                                selectedIcon =
+                                                    categoryIcon.icon;
+                                              });
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    isSelected
+                                                        ? Color(
+                                                          0xFF0078D4,
+                                                        ).withOpacity(0.1)
+                                                        : Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color:
+                                                      isSelected
+                                                          ? Color(0xFF0078D4)
+                                                          : Color(0xFFE1E5E9),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                categoryIcon.icon,
+                                                size: 16,
+                                                color:
+                                                    isSelected
+                                                        ? Color(0xFF0078D4)
+                                                        : Color(0xFF6C757D),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
+                            ),
                       ),
                     ],
                   ),
@@ -525,7 +556,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // 显示成功提示
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(AppLocalizations.of(context)!.categoryAddSuccess(name)),
+                                    content: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.categoryAddSuccess(name),
+                                    ),
                                     backgroundColor: Colors.green,
                                     duration: Duration(seconds: 2),
                                   ),
@@ -534,7 +569,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // 显示错误提示
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(AppLocalizations.of(context)!.addCategoryFailed(e.toString())),
+                                    content: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.addCategoryFailed(e.toString()),
+                                    ),
                                     backgroundColor: Colors.red,
                                     duration: Duration(seconds: 3),
                                   ),
@@ -639,7 +678,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(height: 20),
                   // Content
                   Text(
-                    AppLocalizations.of(context)!.deleteCategoryMessage(category),
+                    AppLocalizations.of(
+                      context,
+                    )!.deleteCategoryMessage(category),
                     style: TextStyle(
                       fontSize: 14,
                       color: Color(0xFF374151),
@@ -841,8 +882,10 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(
           content: Text(
             successCount > 0
-                ? AppLocalizations.of(context)!.programsAddedSuccess(successCount)
-        : AppLocalizations.of(context)!.addProgramsFailed,
+                ? AppLocalizations.of(
+                  context,
+                )!.programsAddedSuccess(successCount)
+                : AppLocalizations.of(context)!.addProgramsFailed,
           ),
           duration: Duration(seconds: 3),
         ),
@@ -912,9 +955,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         children: [
           // 占位区域
-          Expanded(
-            child: Container(),
-          ),
+          Expanded(child: Container()),
           // 搜索框
           _buildSearchBar(),
         ],
@@ -1073,7 +1114,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // 添加类别按钮
             _buildAddCategoryButton(),
-
           ],
         ),
       ),
@@ -1083,7 +1123,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // 汉堡菜单按钮
   Widget _buildExpandedButton() {
     return Tooltip(
-      message: _isSidebarExpanded ? AppLocalizations.of(context)!.collapseSidebar : AppLocalizations.of(context)!.expandSidebar,
+      message:
+          _isSidebarExpanded
+              ? AppLocalizations.of(context)!.collapseSidebar
+              : AppLocalizations.of(context)!.expandSidebar,
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
@@ -1118,11 +1161,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                      '类别',
-                      overflow: TextOverflow.clip,
-                      maxLines: 1,
-                      style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
-                    ),
+                    AppLocalizations.of(context)!.category,
+                    overflow: TextOverflow.clip,
+                    maxLines: 1,
+                    style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+                  ),
                   ),
                 ),
               ),
@@ -1187,15 +1230,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: _buildCategoryIconWidget(icon),
                   ),
                   Flexible(
-                child: AnimatedOpacity(
-                  opacity: _isSidebarExpanded ? 1.0 : 0.0,
-                  duration: Duration(milliseconds: 200),
+                    child: AnimatedOpacity(
+                      opacity: _isSidebarExpanded ? 1.0 : 0.0,
+                      duration: Duration(milliseconds: 200),
                       child: Padding(
                         padding: EdgeInsets.only(
                           left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
-                          category == 'All' ? AppLocalizations.of(context)!.all : category,
+                          category == 'All'
+                              ? AppLocalizations.of(context)!.all
+                              : category,
                           overflow: TextOverflow.clip,
                           maxLines: 1,
                           style: TextStyle(
@@ -1326,10 +1371,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color:
-                          _isDragging ? Color(0xFF2196F3) : Colors.transparent,
-                      width: 2,
-                      style:
-                          _isDragging ? BorderStyle.solid : BorderStyle.none,
+                            _isDragging
+                                ? Color(0xFF2196F3)
+                                : Colors.transparent,
+                        width: 2,
+                        style:
+                            _isDragging ? BorderStyle.solid : BorderStyle.none,
                       ),
                     ),
                     child:
@@ -1383,5 +1430,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  }
+}

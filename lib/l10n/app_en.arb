@@ -107,6 +107,7 @@
     }
   },
   "changeCategoryFailed": "Failed to change category: {error}",
+  "category": "Category",
   "@changeCategoryFailed": {
     "placeholders": {
       "error": {
