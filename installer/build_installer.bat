@@ -10,6 +10,18 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+:: Sync version
+echo Syncing version...
+call dart run sync_version.dart
+if %ERRORLEVEL% NEQ 0 (
+    echo Error: Version synchronization failed
+    pause
+    exit /b 1
+)
+
+
+
+
 :: Build Flutter application
 echo Building Flutter application...
 cd ..
@@ -31,7 +43,6 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Installer build completed!
-echo Output file: QuickStart-1.2.0-windows-setup.exe
 
 :: Generate DSA signature
 echo Generating DSA signature...
