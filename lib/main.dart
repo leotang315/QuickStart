@@ -6,6 +6,7 @@ import 'models/program.dart';
 import 'services/database_service.dart';
 import 'services/launcher_service.dart';
 import 'services/language_service.dart';
+import 'services/auto_update_service.dart';
 import 'screens/home_screen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -35,6 +36,9 @@ void main() async {
   // 初始化热键管理器
   await hotKeyManager.unregisterAll();
 
+  // 初始化自动更新服务
+  await AutoUpdateService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -52,12 +56,20 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _loadLanguage();
+    _setupAutoUpdate();
   }
 
   Future<void> _loadLanguage() async {
     final locale = await LanguageService.getSavedLanguage();
     setState(() {
       _locale = locale;
+    });
+  }
+
+  void _setupAutoUpdate() {
+    // 延迟检查更新，避免影响启动速度
+    Future.delayed(const Duration(seconds: 3), () {
+      AutoUpdateService.checkForUpdates();
     });
   }
 
@@ -85,6 +97,7 @@ class _MyAppState extends State<MyApp> {
       ],
       supportedLocales: LanguageService.getSupportedLocales(),
       home: HomeScreen(onLanguageChanged: changeLanguage),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

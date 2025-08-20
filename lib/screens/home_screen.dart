@@ -1161,11 +1161,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                    AppLocalizations.of(context)!.category,
-                    overflow: TextOverflow.clip,
-                    maxLines: 1,
-                    style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
-                  ),
+                      AppLocalizations.of(context)!.category,
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),
+                    ),
                   ),
                 ),
               ),

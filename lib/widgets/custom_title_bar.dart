@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../services/auto_update_service.dart';
+
 class CustomTitleBar extends StatefulWidget {
   final String title;
   final Function(String)? onLanguageChange;
@@ -103,11 +105,29 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
               ),
             ),
           ),
+          _buildCheckUpdateButton(),
           // 语言切换按钮
           _buildLanguageButton(),
           // 窗口控制按钮
           _buildWindowControls(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCheckUpdateButton() {
+    return Tooltip(
+      message: '检查更新',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => AutoUpdateService.checkForUpdates(),
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Icon(Icons.update, size: 16, color: Color(0xFF6C757D)),
+          ),
+        ),
       ),
     );
   }

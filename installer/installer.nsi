@@ -1,8 +1,9 @@
 ; QuickStart Installer Script
 ; Compile with NSIS 3.0+
 
+
 !define APP_NAME "QuickStart"
-!define APP_VERSION "1.0.0"
+!define APP_VERSION "1.7.0"
 !define APP_PUBLISHER "Your Company Name"
 !define APP_URL "https://yourcompany.com"
 !define APP_EXECUTABLE "quick_start.exe"
@@ -10,7 +11,7 @@
 
 ; Installer properties
 Name "${APP_NAME}"
-OutFile "QuickStart_Setup_${APP_VERSION}.exe"
+OutFile "QuickStart-1.7.0-windows-setup.exe"
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallPath"
 RequestExecutionLevel admin
@@ -18,6 +19,9 @@ RequestExecutionLevel admin
 ; Include file size calculation function (MUST be before using GetSize)
 !include "FileFunc.nsh"
 !insertmacro GetSize
+
+; Include KillProc plugin
+!include "nsProcess.nsh"
 
 ; Modern UI interface
 !include "MUI2.nsh"
@@ -53,9 +57,80 @@ VIAddVersionKey "FileDescription" "${APP_DESCRIPTION}"
 VIAddVersionKey "FileVersion" "${APP_VERSION}"
 VIAddVersionKey "LegalCopyright" "© ${APP_PUBLISHER}"
 
+; Function to close running application
+Function CloseApplication
+  ; Check if process is running
+  ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+  StrCmp $R0 0 process_found process_not_found
+  
+  process_not_found:
+    ; Process not found, continue installation
+    Goto done
+    
+  process_found:
+    ; Process found, ask user to close it
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "${APP_NAME} is currently running.$\n$\nClick 'OK' to automatically close the application, or 'Cancel' to exit installation." IDOK kill_process
+    ${nsProcess::Unload}
+    Abort
+    
+  kill_process:
+    ; Try to kill the process gracefully first
+    ${nsProcess::KillProcess} "${APP_EXECUTABLE}" $R0
+    Sleep 2000
+    
+    ; Check if process is still running
+    ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+    StrCmp $R0 0 still_running done
+    
+  still_running:
+    MessageBox MB_OK|MB_ICONSTOP "Unable to close ${APP_NAME}. Please close the application manually and run the installer again."
+    ${nsProcess::Unload}
+    Abort
+    
+  done:
+    ${nsProcess::Unload}
+FunctionEnd
+
+; Function to close running application for uninstaller
+Function un.CloseApplication
+  ; Check if process is running
+  ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+  StrCmp $R0 0 process_found process_not_found
+  
+  process_not_found:
+    ; Process not found, continue uninstallation
+    Goto done
+    
+  process_found:
+    ; Process found, ask user to close it
+    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "${APP_NAME} is currently running.$\n$\nClick 'OK' to automatically close the application, or 'Cancel' to exit uninstallation." IDOK kill_process
+    ${nsProcess::Unload}
+    Abort
+    
+  kill_process:
+    ; Try to kill the process
+    ${nsProcess::KillProcess} "${APP_EXECUTABLE}" $R0
+    Sleep 2000
+    
+    ; Check if process is still running
+    ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+    StrCmp $R0 0 still_running done
+    
+  still_running:
+    MessageBox MB_OK|MB_ICONSTOP "Unable to close ${APP_NAME}. Please close the application manually and run the uninstaller again."
+    ${nsProcess::Unload}
+    Abort
+    
+  done:
+    ${nsProcess::Unload}
+FunctionEnd
+
 ; Installation section
 Section "Main Program" SecMain
   SectionIn RO
+  
+  ; Close running application before installation
+  Call CloseApplication
   
   ; Set output path
   SetOutPath "$INSTDIR"
@@ -66,9 +141,15 @@ Section "Main Program" SecMain
   ; Copy Flutter runtime files
   File "..\build\windows\x64\runner\Release\flutter_windows.dll"
   
-  ; Copy all plugin DLL files
+  ; Copy auto-updater related DLL files
+  File "..\build\windows\x64\runner\Release\WinSparkle.dll"
+  File "..\build\windows\x64\runner\Release\auto_updater_windows_plugin.dll"
+  
+  ; Copy all other plugin DLL files
+  File "..\build\windows\x64\runner\Release\connectivity_plus_plugin.dll"
   File "..\build\windows\x64\runner\Release\desktop_drop_plugin.dll"
   File "..\build\windows\x64\runner\Release\hotkey_manager_plugin.dll"
+  File "..\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"
   File "..\build\windows\x64\runner\Release\screen_retriever_plugin.dll"
   File "..\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"
   File "..\build\windows\x64\runner\Release\window_manager_plugin.dll"
@@ -113,13 +194,22 @@ SectionEnd
 
 ; Uninstallation section
 Section "Uninstall"
+  ; Close running application before uninstallation
+  Call un.CloseApplication
+  
   ; Delete main files
   Delete "$INSTDIR\${APP_EXECUTABLE}"
   Delete "$INSTDIR\flutter_windows.dll"
   
-  ; Delete all plugin DLL files
+  ; Delete auto-updater related DLL files
+  Delete "$INSTDIR\WinSparkle.dll"
+  Delete "$INSTDIR\auto_updater_windows_plugin.dll"
+  
+  ; Delete all other plugin DLL files
+  Delete "$INSTDIR\connectivity_plus_plugin.dll"
   Delete "$INSTDIR\desktop_drop_plugin.dll"
   Delete "$INSTDIR\hotkey_manager_plugin.dll"
+  Delete "$INSTDIR\hotkey_manager_windows_plugin.dll"
   Delete "$INSTDIR\screen_retriever_plugin.dll"
   Delete "$INSTDIR\url_launcher_windows_plugin.dll"
   Delete "$INSTDIR\window_manager_plugin.dll"

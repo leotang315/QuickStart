@@ -31,5 +31,14 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Installer build completed!
-echo Output file: QuickStart_Setup_1.0.0.exe
+echo Output file: QuickStart-1.2.0-windows-setup.exe
+
+:: Generate DSA signature
+echo Generating DSA signature...
+cd ..
+dart run auto_updater:sign_update installer/QuickStart-1.2.0-windows-setup.exe
+if %ERRORLEVEL% NEQ 0 (
+    echo Warning: Failed to generate signature
+)
+
 pause

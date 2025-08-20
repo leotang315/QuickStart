@@ -3,8 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  auto_updater_windows
+  connectivity_plus
   desktop_drop
-  hotkey_manager
+  hotkey_manager_windows
   screen_retriever
   url_launcher_windows
   window_manager

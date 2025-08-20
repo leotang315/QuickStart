@@ -118,4 +118,12 @@ END
 
 
 /////////////////////////////////////////////////////////////////////////////
+//
+// WinSparkle
+//
+
+// And verify signature using DSA public key:
+DSAPub      DSAPEM      "../../dsa_pub.pem"
+
+
 #endif    // not APSTUDIO_INVOKED
