@@ -1,0 +1,5 @@
+# 忽略私钥文件
+dsa_priv.pem
+*.key
+*.p12
+*.pfx

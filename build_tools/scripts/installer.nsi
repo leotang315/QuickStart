@@ -1,6 +1,15 @@
 ; QuickStart Installer Script
 ; Compile with NSIS 3.0+
 
+; Define project root directory (relative to this script location)
+!ifndef PROJECT_ROOT
+  !define PROJECT_ROOT "..\..\.." 
+!endif
+
+!ifndef PROJECT_OUTPUT
+  !define PROJECT_OUTPUT "${PROJECT_ROOT}\\dist\\QuickStart-1.6.0-windows-setup.exe"
+!endif
+
 
 !define APP_NAME "QuickStart"
 !define APP_VERSION "1.7.0"
@@ -11,7 +20,7 @@
 
 ; Installer properties
 Name "${APP_NAME}"
-OutFile "QuickStart-1.7.0-windows-setup.exe"
+OutFile "${PROJECT_OUTPUT}"
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKLM "Software\${APP_NAME}" "InstallPath"
 RequestExecutionLevel admin
@@ -33,7 +42,7 @@ RequestExecutionLevel admin
 
 ; Installation pages
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "license.txt"
+!insertmacro MUI_PAGE_LICENSE "${PROJECT_ROOT}\build_tools\config\license.txt"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -136,27 +145,26 @@ Section "Main Program" SecMain
   SetOutPath "$INSTDIR"
   
   ; Copy main program file
-  File "..\build\windows\x64\runner\Release\${APP_EXECUTABLE}"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\${APP_EXECUTABLE}"
   
   ; Copy Flutter runtime files
-  File "..\build\windows\x64\runner\Release\flutter_windows.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\flutter_windows.dll"
   
   ; Copy auto-updater related DLL files
-  File "..\build\windows\x64\runner\Release\WinSparkle.dll"
-  File "..\build\windows\x64\runner\Release\auto_updater_windows_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\WinSparkle.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\auto_updater_windows_plugin.dll"
   
   ; Copy all other plugin DLL files
-  File "..\build\windows\x64\runner\Release\connectivity_plus_plugin.dll"
-  File "..\build\windows\x64\runner\Release\desktop_drop_plugin.dll"
-  File "..\build\windows\x64\runner\Release\hotkey_manager_plugin.dll"
-  File "..\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"
-  File "..\build\windows\x64\runner\Release\screen_retriever_plugin.dll"
-  File "..\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"
-  File "..\build\windows\x64\runner\Release\window_manager_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\connectivity_plus_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\desktop_drop_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\hotkey_manager_windows_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\screen_retriever_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\url_launcher_windows_plugin.dll"
+  File "${PROJECT_ROOT}\build\windows\x64\runner\Release\window_manager_plugin.dll"
   
   ; Copy data folder
   SetOutPath "$INSTDIR\data"
-  File /r "..\build\windows\x64\runner\Release\data\*"
+  File /r "${PROJECT_ROOT}\build\windows\x64\runner\Release\data\*"
   
   ; Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -208,7 +216,6 @@ Section "Uninstall"
   ; Delete all other plugin DLL files
   Delete "$INSTDIR\connectivity_plus_plugin.dll"
   Delete "$INSTDIR\desktop_drop_plugin.dll"
-  Delete "$INSTDIR\hotkey_manager_plugin.dll"
   Delete "$INSTDIR\hotkey_manager_windows_plugin.dll"
   Delete "$INSTDIR\screen_retriever_plugin.dll"
   Delete "$INSTDIR\url_launcher_windows_plugin.dll"

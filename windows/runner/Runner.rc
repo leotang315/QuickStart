@@ -123,7 +123,6 @@ END
 //
 
 // And verify signature using DSA public key:
-DSAPub      DSAPEM      "../../dsa_pub.pem"
-
+DSAPub DSAPEM "../../build_tools/keys/dsa_pub.pem"
 
 #endif    // not APSTUDIO_INVOKED
