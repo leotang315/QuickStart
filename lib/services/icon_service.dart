@@ -7,6 +7,7 @@ import 'package:win32/win32.dart';
 import 'package:flutter/widgets.dart';
 
 import '../utls/raw_image_provider.dart';
+import 'log_service.dart';
 
 // 在文件顶部添加 DLL 引用
 final shell32 = DynamicLibrary.open('shell32.dll');
@@ -299,7 +300,7 @@ class IconService {
 
       return Image(image: RawImageProvider(raw));
     } catch (e) {
-      debugPrint('Error processing icon: $e');
+      LogService.error('Error processing icon', e);
       return null;
     } finally {
       // 清理所有资源

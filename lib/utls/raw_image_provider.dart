@@ -1,8 +1,10 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:crypto/crypto.dart';
+import '../services/log_service.dart';
 
 /// Decodes the given [image] (raw image pixel data) as an image ('dart:ui')
 class RawImageProvider extends ImageProvider<_RawImageKey> {
@@ -47,7 +49,7 @@ class RawImageProvider extends ImageProvider<_RawImageKey> {
       pixelFormat: image.pixelFormat,
     );
     assert(() {
-      debugPrint('ImageDescriptor: ${descriptor.width}x${descriptor.height}');
+      LogService.debug('ImageDescriptor: ${descriptor.width}x${descriptor.height}');
       return true;
     }());
     return descriptor.instantiateCodec(

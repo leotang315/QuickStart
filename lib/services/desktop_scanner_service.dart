@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path/path.dart' as path;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'log_service.dart';
 
 class DesktopScannerService {
   static const String _backupKey = 'desktop_backup_info';
@@ -25,7 +26,7 @@ class DesktopScannerService {
         return path.join(home, 'Desktop');
       }
     }
-    throw Exception('无法获取桌面路径');
+    throw Exception('Failed to get desktop path');
   }
 
   /// 获取备份文件夹路径
@@ -41,7 +42,7 @@ class DesktopScannerService {
     final items = <DesktopItem>[];
 
     if (!directory.existsSync()) {
-      throw Exception('桌面目录不存在');
+      throw Exception('Failed to scan desktop items: Desktop directory does not exist');
     }
 
     final entities = directory.listSync();
@@ -122,7 +123,7 @@ class DesktopScannerService {
 
         backupInfo.items.add(backupItem);
       } catch (e) {
-        print('快速备份文件失败: ${item.originalPath}, 错误: $e');
+        LogService.error('Failed to fast backup file: ${item.originalPath}', e);
       }
     }
 
@@ -136,7 +137,7 @@ class DesktopScannerService {
   Future<void> fastRestoreDesktopItems() async {
     final backupInfo = await _loadBackupInfo();
     if (backupInfo == null) {
-      throw Exception('没有找到备份信息');
+      throw Exception('Failed to restore desktop items: No backup information found');
     }
 
     for (final item in backupInfo.items) {
@@ -152,7 +153,7 @@ class DesktopScannerService {
           await backupDir.rename(item.originalPath);
         }
       } catch (e) {
-        print('快速恢复文件失败: ${item.originalPath}, 错误: $e');
+        LogService.error('Failed to fast restore file: ${item.originalPath}', e);
       }
     }
 
@@ -240,7 +241,7 @@ class DesktopScannerService {
         final data = jsonDecode(json);
         return BackupInfo.fromJson(data);
       } catch (e) {
-        print('加载备份信息失败: $e');
+        LogService.error('Failed to load backup information', e);
       }
     }
 

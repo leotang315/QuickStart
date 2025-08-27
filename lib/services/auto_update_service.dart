@@ -2,6 +2,7 @@ import 'package:auto_updater/auto_updater.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:io';
+import 'log_service.dart';
 
 class AutoUpdateService {
   static const String _feedUrl = 'http://localhost:80/appcast.xml';
@@ -18,10 +19,10 @@ class AutoUpdateService {
         await autoUpdater.setFeedURL(_feedUrl);
         await autoUpdater.setScheduledCheckInterval(3600); // 每小时检查一次
         _isInitialized = true;
-        print('AutoUpdater initialized successfully');
+        LogService.info('AutoUpdater initialized successfully');
       }
     } catch (e) {
-      print('Failed to initialize AutoUpdater: $e');
+      LogService.error('Failed to initialize AutoUpdater', e);
     }
   }
 
@@ -35,7 +36,7 @@ class AutoUpdateService {
       // 检查网络连接
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        if (!silent) print('No internet connection');
+        if (!silent) LogService.warning('No internet connection');
         return false;
       }
 
@@ -43,7 +44,7 @@ class AutoUpdateService {
       await autoUpdater.checkForUpdates();
       return true;
     } catch (e) {
-      if (!silent) print('Error checking for updates: $e');
+      if (!silent) LogService.error('Error checking for updates', e);
       return false;
     }
   }

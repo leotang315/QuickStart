@@ -7,6 +7,7 @@ import 'services/database_service.dart';
 import 'services/launcher_service.dart';
 import 'services/language_service.dart';
 import 'services/auto_update_service.dart';
+import 'services/log_service.dart';
 import 'screens/home_screen.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -35,6 +36,10 @@ void main() async {
 
   // 初始化热键管理器
   await hotKeyManager.unregisterAll();
+
+  // 初始化日志服务
+  await LogService.init(enableFileOutput: true);
+  LogService.info('Application started');
 
   // 初始化自动更新服务
   await AutoUpdateService.initialize();

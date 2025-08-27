@@ -10,6 +10,7 @@ import '../services/launcher_service.dart';
 import '../services/category_icon_service.dart';
 import '../services/language_service.dart';
 import '../services/desktop_scanner_service.dart';
+import '../services/log_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 import '../widgets/custom_title_bar.dart';
@@ -96,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 构建类别图标Widget
   Widget _buildCategoryIconWidget(String iconIdentifier) {
-    print("object $iconIdentifier");
+    LogService.debug("Icon identifier: $iconIdentifier");
     // 如果是emoji字符（如📱、📁），直接显示
     // if (_isEmoji(iconIdentifier)) {
     //   return Text(iconIdentifier, style: TextStyle(fontSize: 16));
@@ -152,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除失败提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('删除失败: $e'),
+          content: Text(AppLocalizations.of(context)!.deleteFailed(e.toString())),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -168,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _hasDesktopBackup = hasBackup;
       });
     } catch (e) {
-      print('检查桌面备份状态失败: $e');
+      LogService.error('Failed to check desktop backup status', e);
     }
   }
 
@@ -235,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
         try {
           await _databaseService.insertProgram(program);
         } catch (e) {
-          print('添加程序失败: ${item.name}, 错误: $e');
+          LogService.error('Failed to add program: ${item.name}', e);
         }
       }
 
@@ -326,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             await _databaseService.deleteProgram(program.id!);
           } catch (e) {
-            print('删除程序失败: ${item.name}, 错误: $e');
+            LogService.error('Failed to delete program: ${item.name}', e);
           }
         }
       }

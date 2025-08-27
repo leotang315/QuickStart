@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/program.dart';
+import 'log_service.dart';
 
 class LauncherService {
   static final LauncherService _instance = LauncherService._internal();
@@ -39,7 +40,7 @@ class LauncherService {
       final Uri fileUri = Uri.file(program.path);
       return await launchUrl(fileUri);
     } catch (e) {
-      print('Error launching program: $e');
+      LogService.error('Error launching program: ${program.name}', e);
       return false;
     }
   }
