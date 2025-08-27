@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isCategoryEditMode = false;
   String? _categoryToDelete;
-  
+
   // 桌面整理相关状态
   bool _hasDesktopBackup = false;
 
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
-  
+
   // 检查桌面备份状态
   Future<void> _checkDesktopBackup() async {
     try {
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print('检查桌面备份状态失败: $e');
     }
   }
-  
+
   // 整理桌面
   Future<void> _organizeDesktop() async {
     try {
@@ -191,24 +191,23 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       );
-      
+
       // 扫描桌面项目
       final desktopItems = await _desktopScannerService.scanDesktopItems();
-      
+
       if (desktopItems.isEmpty) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('桌面没有可整理的项目'),
-            backgroundColor: Colors.orange,
-          ),
+          SnackBar(content: Text('桌面没有可整理的项目'), backgroundColor: Colors.orange),
         );
         return;
       }
-      
-      // 备份桌面文件
-      final backupInfo = await _desktopScannerService.backupDesktopItems(desktopItems);
-      
+
+      // 快速备份桌面文件（直接移动，无需拷贝）
+      final backupInfo = await _desktopScannerService.fastBackupDesktopItems(
+        desktopItems,
+      );
+
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
         // 根据文件类型确定类别
@@ -226,33 +225,32 @@ class _HomeScreenState extends State<HomeScreen> {
             category = '文件';
             break;
         }
-        
+
         final program = Program(
           name: item.name,
           path: item.backupPath,
           category: category,
         );
-        
+
         try {
           await _databaseService.insertProgram(program);
         } catch (e) {
           print('添加程序失败: ${item.name}, 错误: $e');
         }
       }
-      
-      // 清理桌面文件
-      await _desktopScannerService.cleanDesktopItems(desktopItems);
-      
+
+      // 注意：fastBackupDesktopItems已经移动了文件，无需再次清理
+
       // 更新状态
       setState(() {
         _hasDesktopBackup = true;
       });
-      
+
       // 重新加载程序列表
       await _loadPrograms();
-      
+
       Navigator.pop(context);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('桌面整理完成！已备份 ${desktopItems.length} 个项目'),
@@ -260,7 +258,6 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      
     } catch (e) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -272,7 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
   }
-  
+
   // 恢复桌面
   Future<void> _restoreDesktop() async {
     try {
@@ -297,9 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       );
-      
+
       if (confirmed != true) return;
-      
+
       // 显示加载对话框
       showDialog(
         context: context,
@@ -316,10 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       );
-      
-      // 恢复桌面文件
-      await _desktopScannerService.restoreDesktopItems();
-      
+
       // 获取备份信息并删除对应的程序
       final backupInfo = await _desktopScannerService.getBackupInfo();
       if (backupInfo != null) {
@@ -336,20 +330,20 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       }
-      
-      // 清理备份
-      await _desktopScannerService.clearBackup();
-      
+
+      // 快速恢复桌面文件（直接移动而非拷贝）
+      await _desktopScannerService.fastRestoreDesktopItems();
+
       // 更新状态
       setState(() {
         _hasDesktopBackup = false;
       });
-      
+
       // 重新加载程序列表
       await _loadPrograms();
-      
+
       Navigator.pop(context);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('桌面恢复完成！'),
@@ -357,7 +351,6 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      
     } catch (e) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1328,7 +1321,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // 桌面整理按钮
             _buildDesktopOrganizerButton(),
-            
+
             // 添加类别按钮
             _buildAddCategoryButton(),
           ],
@@ -1549,8 +1542,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       maxLines: 1,
                       style: TextStyle(
                         fontSize: 14,
-                        color: _hasDesktopBackup ? Colors.orange : Color(0xFF6C757D),
-                        fontWeight: _hasDesktopBackup ? FontWeight.w600 : FontWeight.normal,
+                        color:
+                            _hasDesktopBackup
+                                ? Colors.orange
+                                : Color(0xFF6C757D),
+                        fontWeight:
+                            _hasDesktopBackup
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -1562,7 +1561,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  
+
   // 添加类别按钮组件函数
   Widget _buildAddCategoryButton() {
     return Tooltip(

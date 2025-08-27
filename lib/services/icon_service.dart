@@ -274,7 +274,7 @@ class IconService {
         // 计算实际内容区域的大小
         final contentWidth = contentRight - contentLeft + 1;
         final contentHeight = contentBottom - contentTop + 1;
-        print('$contentWidth  $contentHeight');
+
         // 如果实际内容区域明显小于 256x256，说明是小图标被放在大画布中
         if (contentWidth <= 48 && contentHeight <= 48) {
           return null;

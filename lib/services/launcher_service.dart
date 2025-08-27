@@ -12,7 +12,6 @@ class LauncherService {
   Future<bool> launchProgram(Program program) async {
     try {
       final file = File(program.path);
-      print(program.path);
       if (await file.exists()) {
         // 创建文件URI
         final Uri fileUri = Uri.file(program.path);
