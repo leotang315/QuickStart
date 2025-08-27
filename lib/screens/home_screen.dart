@@ -9,6 +9,7 @@ import '../services/database_service.dart';
 import '../services/launcher_service.dart';
 import '../services/category_icon_service.dart';
 import '../services/language_service.dart';
+import '../services/desktop_scanner_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 import '../widgets/custom_title_bar.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _databaseService = DatabaseService();
   final LauncherService _launcherService = LauncherService();
+  final DesktopScannerService _desktopScannerService = DesktopScannerService();
   List<Program> _programs = [];
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -42,6 +44,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isCategoryEditMode = false;
   String? _categoryToDelete;
+  
+  // 桌面整理相关状态
+  bool _hasDesktopBackup = false;
 
   // 语言切换方法
   void _changeLanguage(String languageCode) {
@@ -52,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadPrograms();
+    _checkDesktopBackup();
 
     // 监听搜索框焦点变化
     _searchFocusListener = () {
@@ -146,9 +152,217 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除失败提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.deleteFailed(e.toString()),
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+  
+  // 检查桌面备份状态
+  Future<void> _checkDesktopBackup() async {
+    try {
+      final hasBackup = await _desktopScannerService.hasBackup();
+      setState(() {
+        _hasDesktopBackup = hasBackup;
+      });
+    } catch (e) {
+      print('检查桌面备份状态失败: $e');
+    }
+  }
+  
+  // 整理桌面
+  Future<void> _organizeDesktop() async {
+    try {
+      // 显示加载对话框
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("正在整理桌面..."),
+              ],
+            ),
+          );
+        },
+      );
+      
+      // 扫描桌面项目
+      final desktopItems = await _desktopScannerService.scanDesktopItems();
+      
+      if (desktopItems.isEmpty) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('桌面没有可整理的项目'),
+            backgroundColor: Colors.orange,
           ),
+        );
+        return;
+      }
+      
+      // 备份桌面文件
+      final backupInfo = await _desktopScannerService.backupDesktopItems(desktopItems);
+      
+      // 将桌面项目添加到程序列表
+      for (final item in backupInfo.items) {
+        // 根据文件类型确定类别
+        String category;
+        switch (item.type) {
+          case DesktopItemType.executable:
+          case DesktopItemType.shortcut:
+          case DesktopItemType.urlShortcut:
+            category = '桌面应用';
+            break;
+          case DesktopItemType.folder:
+            category = '文件夹';
+            break;
+          case DesktopItemType.file:
+            category = '文件';
+            break;
+        }
+        
+        final program = Program(
+          name: item.name,
+          path: item.backupPath,
+          category: category,
+        );
+        
+        try {
+          await _databaseService.insertProgram(program);
+        } catch (e) {
+          print('添加程序失败: ${item.name}, 错误: $e');
+        }
+      }
+      
+      // 清理桌面文件
+      await _desktopScannerService.cleanDesktopItems(desktopItems);
+      
+      // 更新状态
+      setState(() {
+        _hasDesktopBackup = true;
+      });
+      
+      // 重新加载程序列表
+      await _loadPrograms();
+      
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('桌面整理完成！已备份 ${desktopItems.length} 个项目'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('桌面整理失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+  
+  // 恢复桌面
+  Future<void> _restoreDesktop() async {
+    try {
+      // 显示确认对话框
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('确认恢复'),
+            content: Text('确定要恢复桌面到整理前的状态吗？这将删除当前桌面上的所有文件并恢复备份的文件。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('确认'),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+              ),
+            ],
+          );
+        },
+      );
+      
+      if (confirmed != true) return;
+      
+      // 显示加载对话框
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text("正在恢复桌面..."),
+              ],
+            ),
+          );
+        },
+      );
+      
+      // 恢复桌面文件
+      await _desktopScannerService.restoreDesktopItems();
+      
+      // 获取备份信息并删除对应的程序
+      final backupInfo = await _desktopScannerService.getBackupInfo();
+      if (backupInfo != null) {
+        for (final item in backupInfo.items) {
+          try {
+            final programs = await _databaseService.getPrograms();
+            final program = programs.firstWhere(
+              (p) => p.name == item.name,
+              orElse: () => throw Exception('程序未找到'),
+            );
+            await _databaseService.deleteProgram(program.id!);
+          } catch (e) {
+            print('删除程序失败: ${item.name}, 错误: $e');
+          }
+        }
+      }
+      
+      // 清理备份
+      await _desktopScannerService.clearBackup();
+      
+      // 更新状态
+      setState(() {
+        _hasDesktopBackup = false;
+      });
+      
+      // 重新加载程序列表
+      await _loadPrograms();
+      
+      Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('桌面恢复完成！'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('桌面恢复失败: $e'),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -1112,6 +1326,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            // 桌面整理按钮
+            _buildDesktopOrganizerButton(),
+            
             // 添加类别按钮
             _buildAddCategoryButton(),
           ],
@@ -1295,6 +1512,57 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 桌面整理按钮组件函数
+  Widget _buildDesktopOrganizerButton() {
+    return Tooltip(
+      message: _hasDesktopBackup ? '恢复桌面' : '整理桌面',
+      preferBelow: false,
+      verticalOffset: 20,
+      child: InkWell(
+        onTap: _hasDesktopBackup ? _restoreDesktop : _organizeDesktop,
+        child: Container(
+          height: 50,
+          padding: EdgeInsets.symmetric(horizontal: 15),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: Color(0xFFE9ECEF), width: 1)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                child: Icon(
+                  _hasDesktopBackup ? Icons.restore : Icons.desktop_windows,
+                  color: _hasDesktopBackup ? Colors.orange : Color(0xFF6C757D),
+                ),
+              ),
+              Flexible(
+                child: AnimatedOpacity(
+                  opacity: _isSidebarExpanded ? 1.0 : 0.0,
+                  duration: Duration(milliseconds: 200),
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 12),
+                    child: Text(
+                      _hasDesktopBackup ? '恢复桌面' : '整理桌面',
+                      overflow: TextOverflow.clip,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _hasDesktopBackup ? Colors.orange : Color(0xFF6C757D),
+                        fontWeight: _hasDesktopBackup ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
   // 添加类别按钮组件函数
   Widget _buildAddCategoryButton() {
     return Tooltip(
