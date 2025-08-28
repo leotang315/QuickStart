@@ -21,11 +21,11 @@
   "categoryAddSuccess": "类别 \"{categoryName}\" 添加成功",
   "addCategoryFailed": "添加类别失败: {error}",
   "categoryDeletedWithPrograms": "类别 \"{categoryName}\" 及其下的 {count} 个程序已删除",
-  "cannotDeleteAllCategory": "无法删除\"全部\"类别",
+
   "addingPrograms": "正在添加程序...",
   "programsAddedSuccess": "成功添加 {count} 个程序",
   "addProgramsFailed": "添加失败，请检查文件格式",
-  "all": "全部",
+
   "noProgramsMessage": "暂无程序\n拖拽程序文件到此区域添加",
   "delete": "删除",
   "changeCategory": "更改类别",

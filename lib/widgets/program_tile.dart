@@ -5,7 +5,7 @@ import '../models/program.dart';
 import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/database_service.dart';
-import '../models/category.dart';
+
 import '../services/category_icon_service.dart';
 
 class ProgramTile extends StatefulWidget {
@@ -150,7 +150,7 @@ class _ProgramTileState extends State<ProgramTile> {
 
     final DatabaseService databaseService = DatabaseService();
     final categories = await databaseService.getCategories();
-    final availableCategories = categories.where((cat) => cat.name != 'All').toList();
+    final availableCategories = categories;
 
     if (!mounted) return;
 

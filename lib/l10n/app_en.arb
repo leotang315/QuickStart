@@ -71,7 +71,7 @@
       }
     }
   },
-  "cannotDeleteAllCategory": "Cannot delete \"All\" category",
+
   "addingPrograms": "Adding programs...",
   "programsAddedSuccess": "Successfully added {count} programs",
   "@programsAddedSuccess": {
@@ -82,7 +82,7 @@
     }
   },
   "addProgramsFailed": "Failed to add programs, please check file format",
-  "all": "All",
+
   "noProgramsMessage": "No programs\nDrag program files to this area to add",
   "delete": "Delete",
   "changeCategory": "Change Category",

@@ -49,8 +49,7 @@ class DatabaseService {
       )
     ''');
     
-    // 插入默认类别
-    await db.insert('categories', {'name': 'All', 'iconName': null});
+    // 不再插入默认的'All'类别
   }
 
   Future<int> insertProgram(Program program) async {
@@ -115,8 +114,7 @@ class DatabaseService {
         )
       ''');
       
-      // 插入默认类别
-      await db.insert('categories', {'name': 'All', 'iconName': null});
+      // 不再插入默认的'All'类别
       
       // 从现有程序中提取类别并插入到categories表
       final List<Map<String, dynamic>> existingCategories = await db.rawQuery(
@@ -125,10 +123,8 @@ class DatabaseService {
       
       for (final categoryMap in existingCategories) {
         final categoryName = categoryMap['category'] as String;
-        if (categoryName != 'All') {
-          await db.insert('categories', {'name': categoryName, 'iconName': null}, 
-            conflictAlgorithm: ConflictAlgorithm.ignore);
-        }
+        await db.insert('categories', {'name': categoryName, 'iconName': null}, 
+          conflictAlgorithm: ConflictAlgorithm.ignore);
       }
     }
   }

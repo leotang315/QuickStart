@@ -30,8 +30,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final DesktopScannerService _desktopScannerService = DesktopScannerService();
   List<Program> _programs = [];
   String _searchQuery = '';
-  String _selectedCategory = 'All';
-  List<String> _categories = ['All'];
+  String _selectedCategory = '';
+  List<String> _categories = [];
   Map<String, Category> _categoryData = {}; // 存储类别数据映射
 
   bool _isSidebarExpanded = false;
@@ -81,10 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 获取类别图标
   String _getCategoryIcon(String categoryName) {
-    if (categoryName == 'All') {
-      return '📱';
-    }
-
     final categoryData = _categoryData[categoryName];
     if (categoryData?.iconName != null) {
       // 直接返回存储的图标名称，让_buildCategoryIconWidget处理
@@ -120,18 +116,17 @@ class _HomeScreenState extends State<HomeScreen> {
     // 从数据库获取类别名称列表
     final categoryNames = categories.map((c) => c.name).toList();
 
-    // 确保'All'类别在第一位
-    final sortedCategories = ['All'];
-    for (final name in categoryNames) {
-      if (name != 'All') {
-        sortedCategories.add(name);
-      }
-    }
-
     setState(() {
       _programs = programs;
-      _categories = sortedCategories;
+      _categories = categoryNames;
       _categoryData = {for (var cat in categories) cat.name: cat}; // 存储类别数据映射
+      
+      // 如果当前选中的类别不存在，选择第一个类别或清空选择
+      if (_selectedCategory.isNotEmpty && !_categories.contains(_selectedCategory)) {
+        _selectedCategory = _categories.isNotEmpty ? _categories.first : '';
+      } else if (_selectedCategory.isEmpty && _categories.isNotEmpty) {
+        _selectedCategory = _categories.first;
+      }
     });
   }
 
@@ -209,28 +204,29 @@ class _HomeScreenState extends State<HomeScreen> {
         desktopItems,
       );
 
+      // 确保"桌面"类别存在
+      final existingCategories = await _databaseService.getCategories();
+      final existingCategoryNames = existingCategories.map((c) => c.name).toSet();
+      
+      if (!existingCategoryNames.contains('桌面')) {
+        final desktopCategory = Category(
+          name: '桌面',
+          iconName: 'desktop_windows',
+        );
+        
+        try {
+          await _databaseService.insertCategory(desktopCategory);
+        } catch (e) {
+          LogService.error('Failed to create desktop category', e);
+        }
+      }
+
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
-        // 根据文件类型确定类别
-        String category;
-        switch (item.type) {
-          case DesktopItemType.executable:
-          case DesktopItemType.shortcut:
-          case DesktopItemType.urlShortcut:
-            category = '桌面应用';
-            break;
-          case DesktopItemType.folder:
-            category = '文件夹';
-            break;
-          case DesktopItemType.file:
-            category = '文件';
-            break;
-        }
-
         final program = Program(
           name: item.name,
           path: item.backupPath,
-          category: category,
+          category: '桌面',
         );
 
         try {
@@ -240,9 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-      // 注意：fastBackupDesktopItems已经移动了文件，无需再次清理
-
-      // 更新状态
+       // 更新状态
       setState(() {
         _hasDesktopBackup = true;
       });
@@ -330,6 +324,20 @@ class _HomeScreenState extends State<HomeScreen> {
             LogService.error('Failed to delete program: ${item.name}', e);
           }
         }
+        
+        // 删除程序后，检查"桌面"类别下是否还有其他程序，如果没有则删除该类别
+        final desktopPrograms = await _databaseService.getProgramsByCategory('桌面');
+        if (desktopPrograms.isEmpty) {
+          try {
+            final categories = await _databaseService.getCategories();
+            final desktopCategory = categories.where((c) => c.name == '桌面').firstOrNull;
+            if (desktopCategory != null) {
+              await _databaseService.deleteCategory(desktopCategory.id!);
+            }
+          } catch (e) {
+            LogService.error('Failed to delete desktop category', e);
+          }
+        }
       }
 
       // 快速恢复桌面文件（直接移动而非拷贝）
@@ -385,9 +393,9 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _categories.remove(category);
         _categoryData.remove(category);
-        // 如果当前选中的是被删除的类别，切换到"全部"
+        // 如果当前选中的是被删除的类别，切换到第一个可用类别
         if (_selectedCategory == category) {
-          _selectedCategory = 'All';
+          _selectedCategory = _categories.isNotEmpty ? _categories.first : '';
         }
       });
 
@@ -422,8 +430,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final matchesSearch = program.name.toLowerCase().contains(
         _searchQuery.toLowerCase(),
       );
-      final matchesCategory =
-          _selectedCategory == 'All' || program.category == _selectedCategory;
+      // 如果有搜索内容，则搜索所有程序；否则按类别过滤
+      final matchesCategory = _searchQuery.isNotEmpty || _selectedCategory.isEmpty || program.category == _selectedCategory;
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -820,16 +828,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showDeleteCategoryDialog(String category) {
-    if (category == 'All') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.cannotDeleteAllCategory),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
 
     showDialog(
       context: context,
@@ -1011,7 +1009,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final program = Program(
             name: fileName,
             path: filePath,
-            category: _selectedCategory == 'All' ? null : _selectedCategory,
+            category: _selectedCategory.isEmpty ? null : _selectedCategory,
           );
 
           await _databaseService.insertProgram(program);
@@ -1069,7 +1067,7 @@ class _HomeScreenState extends State<HomeScreen> {
           final program = Program(
             name: fileName,
             path: filePath,
-            category: _selectedCategory == 'All' ? null : _selectedCategory,
+            category: _selectedCategory.isEmpty ? null : _selectedCategory,
           );
 
           await _databaseService.insertProgram(program);
@@ -1311,10 +1309,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _selectedCategory = category;
                       });
                     },
-                    onDelete:
-                        category != 'All'
-                            ? () => _deleteCategory(category)
-                            : null,
+                    onDelete: () => _deleteCategory(category),
                   );
                 },
               ),
@@ -1396,7 +1391,7 @@ class _HomeScreenState extends State<HomeScreen> {
     VoidCallback? onDelete,
   }) {
     bool showDeleteButton =
-        _isEditMode && _isCategoryEditMode && category != 'All';
+        _isEditMode && _isCategoryEditMode;
 
     return Stack(
       children: [
@@ -1410,7 +1405,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: GestureDetector(
             onTap: onTap,
             onLongPress: () {
-              if (onDelete != null && category != 'All') {
+              if (onDelete != null) {
                 setState(() {
                   _isEditMode = true;
                   _isCategoryEditMode = true;
@@ -1449,9 +1444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
-                          category == 'All'
-                              ? AppLocalizations.of(context)!.all
-                              : category,
+                          category,
                           overflow: TextOverflow.clip,
                           maxLines: 1,
                           style: TextStyle(
