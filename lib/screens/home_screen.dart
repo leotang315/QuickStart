@@ -204,38 +204,20 @@ class _HomeScreenState extends State<HomeScreen> {
         desktopItems,
       );
 
-      // 确保"桌面"类别存在
-      final existingCategories = await _databaseService.getCategories();
-      final existingCategoryNames = existingCategories.map((c) => c.name).toSet();
-      
-      if (!existingCategoryNames.contains('桌面')) {
-        final desktopCategory = Category(
-          name: '桌面',
-          iconName: 'desktop_windows',
-        );
-        
-        try {
-          await _databaseService.insertCategory(desktopCategory);
-        } catch (e) {
-          LogService.error('Failed to create desktop category', e);
+        // 获取桌面分类（固定ID=0）
+        Category? desktopCategory = await _databaseService.getCategoryById(0);
+        if (desktopCategory == null) {
+          LogService.error('Desktop category not found', null);
+          throw 'Desktop category not found';
         }
-      }
 
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
-        // 先查找或创建"桌面"分类
-        Category? desktopCategory = await _databaseService.getCategoryByName('桌面');
-        if (desktopCategory == null) {
-          int categoryId = await _databaseService.insertCategory(
-            Category(name: '桌面', iconName: 'desktop')
-          );
-          desktopCategory = Category(id: categoryId, name: '桌面', iconName: 'desktop');
-        }
-        
         final program = Program(
           name: item.name,
           path: item.backupPath,
           categoryId: desktopCategory.id,
+          frequency: 0,
         );
 
         try {
@@ -338,16 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
               LogService.error('Failed to delete program: ${item.name}', e);
             }
           }
-        
-          // 删除程序后，检查"桌面"类别下是否还有其他程序，如果没有则删除该类别
-          final updatedDesktopPrograms = await _databaseService.getProgramsByCategoryId(desktopCategory.id);
-          if (updatedDesktopPrograms.isEmpty) {
-            try {
-              await _databaseService.deleteCategory(desktopCategory.id!);
-            } catch (e) {
-              LogService.error('Failed to delete desktop category', e);
-            }
-          }
+          // 桌面类别保持永久存在，不删除
         }
       }
 
@@ -385,6 +358,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteCategory(String category) async {
     try {
+      // 保护桌面类别，不允许删除
+      if (category == '桌面') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('桌面类别不能删除'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      
       // 获取分类信息
       final categoryData = _categoryData[category];
       if (categoryData?.id == null) {
@@ -1431,7 +1416,7 @@ class _HomeScreenState extends State<HomeScreen> {
     VoidCallback? onDelete,
   }) {
     bool showDeleteButton =
-        _isEditMode && _isCategoryEditMode;
+        _isEditMode && _isCategoryEditMode && category != '桌面';
 
     return Stack(
       children: [

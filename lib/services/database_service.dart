@@ -50,88 +50,15 @@ class DatabaseService {
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
       )
     ''');
+
+    // 插入桌面类别，使用固定ID=0
+    await db.execute('''
+      INSERT INTO categories (id, name, iconName) VALUES (0, '桌面', 'desktop_windows')
+    ''');
   }
 
   Future<void> _upgradeDb(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-
-    }
-    if (oldVersion < 3) {
-      await db.execute('''
-        CREATE TABLE categories(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL UNIQUE,
-          iconName TEXT
-        )
-      ''');
-
-      // 不再插入默认的'All'类别
-
-      // 从现有程序中提取类别并插入到categories表
-      final List<Map<String, dynamic>> existingCategories = await db.rawQuery(
-        'SELECT DISTINCT category FROM programs WHERE category IS NOT NULL AND category != ""',
-      );
-
-      for (final categoryMap in existingCategories) {
-        final categoryName = categoryMap['category'] as String;
-        await db.insert('categories', {
-          'name': categoryName,
-          'iconName': null,
-        }, conflictAlgorithm: ConflictAlgorithm.ignore);
-      }
-    }
-
-    if (oldVersion < 4) {
-      // 迁移到新的外键结构
-      // 1. 创建新的programs表
-      await db.execute('''
-        CREATE TABLE programs_new(
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          path TEXT NOT NULL,
-          arguments TEXT,
-          iconPath TEXT,
-          category_id INTEGER,
-          frequency INTEGER NOT NULL DEFAULT 0,
-          defaultIconName TEXT,
-          FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
-        )
-      ''');
-
-      // 2. 迁移数据
-      List<Map<String, dynamic>> programs = await db.query('programs');
-      for (var program in programs) {
-        int? categoryId;
-        String? categoryName = program['category'];
-
-        if (categoryName != null && categoryName.isNotEmpty) {
-          // 查找对应的category_id
-          List<Map<String, dynamic>> categories = await db.query(
-            'categories',
-            where: 'name = ?',
-            whereArgs: [categoryName],
-          );
-          if (categories.isNotEmpty) {
-            categoryId = categories.first['id'];
-          }
-        }
-
-        await db.insert('programs_new', {
-          'id': program['id'],
-          'name': program['name'],
-          'path': program['path'],
-          'arguments': program['arguments'],
-          'iconPath': program['iconPath'],
-          'category_id': categoryId,
-          'frequency': program['frequency'],
-
-        });
-      }
-
-      // 3. 删除旧表，重命名新表
-      await db.execute('DROP TABLE programs');
-      await db.execute('ALTER TABLE programs_new RENAME TO programs');
-    }
+    
   }
 
   Future<int> insertProgram(Program program) async {
