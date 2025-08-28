@@ -38,7 +38,7 @@ class _ProgramTileState extends State<ProgramTile> {
     return GestureDetector(
       onTap: () {
         if (!widget.isEditMode) {
-             widget.launcherService.launchProgram(widget.program);
+          widget.launcherService.launchProgram(widget.program);
         }
       },
       onLongPress: () {
@@ -155,7 +155,7 @@ class _ProgramTileState extends State<ProgramTile> {
     if (!mounted) return;
 
     List<PopupMenuEntry<dynamic>> menuItems = [];
-    
+
     // 类别选择区域标题
     menuItems.add(
       PopupMenuItem<dynamic>(
@@ -181,36 +181,7 @@ class _ProgramTileState extends State<ProgramTile> {
         ),
       ),
     );
-    
-    // 无类别选项
-    menuItems.add(
-      PopupMenuItem<String>(
-        value: 'category_none',
-        height: 32,
-        child: Container(
-          padding: EdgeInsets.only(left: 12),
-          child: Row(
-            children: [
-              Icon(Icons.clear, size: 16, color: Colors.grey[600]),
-              SizedBox(width: 8),
-              Text(
-                AppLocalizations.of(context)!.noCategory,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black87,
-                  fontFamily: 'Segoe UI',
-                ),
-              ),
-              if (widget.program.category == null) ...[
-                Spacer(),
-                Icon(Icons.check, size: 16, color: Colors.green[600]),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-    
+
     // 现有类别选项
     for (final category in availableCategories) {
       menuItems.add(
@@ -222,13 +193,15 @@ class _ProgramTileState extends State<ProgramTile> {
             child: Row(
               children: [
                 Icon(
-                   () {
-                     final iconData = CategoryIconService.getIconByName(category.iconName ?? '');
-                     return iconData?.icon ?? Icons.folder;
-                   }(),
-                   size: 16,
-                   color: Color(0xFF495057),
-                 ),
+                  () {
+                    final iconData = CategoryIconService.getIconByName(
+                      category.iconName ?? '',
+                    );
+                    return iconData?.icon ?? Icons.folder;
+                  }(),
+                  size: 16,
+                  color: Color(0xFF495057),
+                ),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -241,7 +214,7 @@ class _ProgramTileState extends State<ProgramTile> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (widget.program.category == category.name) ...[
+                if (widget.program.categoryId == category.id) ...[
                   SizedBox(width: 8),
                   Icon(Icons.check, size: 16, color: Colors.green[600]),
                 ],
@@ -251,10 +224,10 @@ class _ProgramTileState extends State<ProgramTile> {
         ),
       );
     }
-    
+
     // 分隔线
     menuItems.add(PopupMenuDivider(height: 1));
-    
+
     // 删除选项
     menuItems.add(
       PopupMenuItem<String>(
@@ -297,9 +270,11 @@ class _ProgramTileState extends State<ProgramTile> {
       if (value != null) {
         if (value == 'delete') {
           //_showDeleteConfirmDialog();
-           widget.onDelete?.call();
+          widget.onDelete?.call();
         } else if (value.toString().startsWith('category_')) {
-          final categoryValue = value.toString().substring(9); // 移除 'category_' 前缀
+          final categoryValue = value.toString().substring(
+            9,
+          ); // 移除 'category_' 前缀
           if (categoryValue == 'none') {
             _changeProgramCategory(null);
           } else {
@@ -308,53 +283,64 @@ class _ProgramTileState extends State<ProgramTile> {
         }
       }
     });
-
   }
-
 
   void _changeProgramCategory(String? newCategory) async {
     try {
       final DatabaseService databaseService = DatabaseService();
-      
+
       // 创建更新后的程序对象
+      int? categoryId;
+      if (newCategory != null) {
+        // 根据分类名称查找分类ID
+        final categories = await databaseService.getCategories();
+        final category =
+            categories.where((c) => c.name == newCategory).firstOrNull;
+        categoryId = category?.id;
+      }
+
       final updatedProgram = Program(
         id: widget.program.id,
         name: widget.program.name,
         path: widget.program.path,
         arguments: widget.program.arguments,
         iconPath: widget.program.iconPath,
-        category: newCategory,
-        isFrequent: widget.program.isFrequent,
+        categoryId: categoryId,
+        frequency: widget.program.frequency,
       );
-      
+
       // 更新数据库
       await databaseService.updateProgram(updatedProgram);
-      
+
       // 显示成功提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            newCategory != null 
-                ? AppLocalizations.of(context)!.programMovedToCategory(widget.program.name, newCategory)
-                : AppLocalizations.of(context)!.programRemovedFromCategory(widget.program.name)
+            newCategory != null
+                ? AppLocalizations.of(
+                  context,
+                )!.programMovedToCategory(widget.program.name, newCategory)
+                : AppLocalizations.of(
+                  context,
+                )!.programRemovedFromCategory(widget.program.name),
           ),
           duration: Duration(seconds: 2),
         ),
       );
-      
+
       // 通知父组件刷新
       widget.onCategoryChanged?.call();
-      
     } catch (e) {
       // 显示错误提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.changeCategoryFailed(e.toString())),
+          content: Text(
+            AppLocalizations.of(context)!.changeCategoryFailed(e.toString()),
+          ),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
       );
     }
   }
-
 }

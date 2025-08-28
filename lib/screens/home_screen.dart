@@ -223,10 +223,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
+        // 先查找或创建"桌面"分类
+        Category? desktopCategory = await _databaseService.getCategoryByName('桌面');
+        if (desktopCategory == null) {
+          int categoryId = await _databaseService.insertCategory(
+            Category(name: '桌面', iconName: 'desktop')
+          );
+          desktopCategory = Category(id: categoryId, name: '桌面', iconName: 'desktop');
+        }
+        
         final program = Program(
           name: item.name,
           path: item.backupPath,
-          category: '桌面',
+          categoryId: desktopCategory.id,
         );
 
         try {
@@ -312,30 +321,32 @@ class _HomeScreenState extends State<HomeScreen> {
       // 获取备份信息并删除对应的程序
       final backupInfo = await _desktopScannerService.getBackupInfo();
       if (backupInfo != null) {
-        for (final item in backupInfo.items) {
-          try {
-            final programs = await _databaseService.getPrograms();
-            final program = programs.firstWhere(
-              (p) => p.name == item.name,
-              orElse: () => throw Exception('程序未找到'),
-            );
-            await _databaseService.deleteProgram(program.id!);
-          } catch (e) {
-            LogService.error('Failed to delete program: ${item.name}', e);
-          }
-        }
-        
-        // 删除程序后，检查"桌面"类别下是否还有其他程序，如果没有则删除该类别
-        final desktopPrograms = await _databaseService.getProgramsByCategory('桌面');
-        if (desktopPrograms.isEmpty) {
-          try {
-            final categories = await _databaseService.getCategories();
-            final desktopCategory = categories.where((c) => c.name == '桌面').firstOrNull;
-            if (desktopCategory != null) {
-              await _databaseService.deleteCategory(desktopCategory.id!);
+        // 先获取桌面类别
+        final desktopCategory = await _databaseService.getCategoryByName('桌面');
+        if (desktopCategory != null) {
+          // 只在桌面类别中查找程序
+          final desktopPrograms = await _databaseService.getProgramsByCategoryId(desktopCategory.id);
+          
+          for (final item in backupInfo.items) {
+            try {
+              final program = desktopPrograms.firstWhere(
+                (p) => p.name == item.name,
+                orElse: () => throw Exception('程序未找到'),
+              );
+              await _databaseService.deleteProgram(program.id!);
+            } catch (e) {
+              LogService.error('Failed to delete program: ${item.name}', e);
             }
-          } catch (e) {
-            LogService.error('Failed to delete desktop category', e);
+          }
+        
+          // 删除程序后，检查"桌面"类别下是否还有其他程序，如果没有则删除该类别
+          final updatedDesktopPrograms = await _databaseService.getProgramsByCategoryId(desktopCategory.id);
+          if (updatedDesktopPrograms.isEmpty) {
+            try {
+              await _databaseService.deleteCategory(desktopCategory.id!);
+            } catch (e) {
+              LogService.error('Failed to delete desktop category', e);
+            }
           }
         }
       }
@@ -374,20 +385,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteCategory(String category) async {
     try {
+      // 获取分类信息
+      final categoryData = _categoryData[category];
+      if (categoryData?.id == null) {
+        LogService.error('Category not found: $category', null);
+        return;
+      }
+      
+      final categoryId = categoryData!.id!;
+      
       // 获取该类别下的程序数量
-      final programsInCategory = await _databaseService.getProgramsByCategory(
-        category,
-      );
+      final programsInCategory = await _databaseService.getProgramsByCategoryId(categoryId);
       final programCount = programsInCategory.length;
 
       // 删除该类别下的所有程序
-      await _databaseService.deleteProgramsByCategory(category);
+      await _databaseService.deleteProgramsByCategoryId(categoryId);
 
       // 从数据库中删除类别记录
-      final categoryData = _categoryData[category];
-      if (categoryData?.id != null) {
-        await _databaseService.deleteCategory(categoryData!.id!);
-      }
+      await _databaseService.deleteCategory(categoryId);
 
       // 从类别列表中移除该类别
       setState(() {
@@ -431,7 +446,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _searchQuery.toLowerCase(),
       );
       // 如果有搜索内容，则搜索所有程序；否则按类别过滤
-      final matchesCategory = _searchQuery.isNotEmpty || _selectedCategory.isEmpty || program.category == _selectedCategory;
+      bool matchesCategory = _searchQuery.isNotEmpty || _selectedCategory.isEmpty;
+      
+      if (!matchesCategory && _selectedCategory.isNotEmpty) {
+        // 根据选中的分类名称查找对应的分类ID
+        final categoryData = _categoryData[_selectedCategory];
+        if (categoryData != null) {
+          matchesCategory = program.categoryId == categoryData.id;
+        }
+      }
+      
       return matchesSearch && matchesCategory;
     }).toList();
   }
@@ -1006,10 +1030,18 @@ class _HomeScreenState extends State<HomeScreen> {
       for (String filePath in filePaths) {
         try {
           final fileName = filePath.split('\\').last.split('.').first;
+          
+          // 获取分类ID
+          int? categoryId;
+          if (_selectedCategory.isNotEmpty) {
+            final categoryData = _categoryData[_selectedCategory];
+            categoryId = categoryData?.id;
+          }
+          
           final program = Program(
             name: fileName,
             path: filePath,
-            category: _selectedCategory.isEmpty ? null : _selectedCategory,
+            categoryId: categoryId,
           );
 
           await _databaseService.insertProgram(program);
@@ -1064,10 +1096,18 @@ class _HomeScreenState extends State<HomeScreen> {
       for (String filePath in filePaths) {
         try {
           final fileName = filePath.split('\\').last.split('.').first;
+          
+          // 获取分类ID
+          int? categoryId;
+          if (_selectedCategory.isNotEmpty) {
+            final categoryData = _categoryData[_selectedCategory];
+            categoryId = categoryData?.id;
+          }
+          
           final program = Program(
             name: fileName,
             path: filePath,
-            category: _selectedCategory.isEmpty ? null : _selectedCategory,
+            categoryId: categoryId,
           );
 
           await _databaseService.insertProgram(program);

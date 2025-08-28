@@ -6,8 +6,8 @@ class Program {
   final String path;
   final String? arguments;
   final String? iconPath;
-  final String? category;
-  final bool isFrequent;
+  final int? categoryId;  
+  final int frequency;
 
   Program({
     this.id,
@@ -15,8 +15,8 @@ class Program {
     required this.path,
     this.arguments,
     this.iconPath,
-    this.category,
-    this.isFrequent = false,
+    this.categoryId,
+    this.frequency = 0,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,8 +26,8 @@ class Program {
       'path': path,
       'arguments': arguments,
       'iconPath': iconPath,
-      'category': category,
-      'isFrequent': isFrequent ? 1 : 0,
+      'category_id': categoryId,
+      'frequency': frequency,
     };
   }
 
@@ -38,8 +38,8 @@ class Program {
       path: map['path'],
       arguments: map['arguments'],
       iconPath: map['iconPath'],
-      category: map['category'],
-      isFrequent: map['isFrequent'] == 1,
+      categoryId: map['category_id'],
+      frequency: map['frequency'] ?? 0,
     );
   }
 }
