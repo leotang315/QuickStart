@@ -4,22 +4,15 @@ import 'package:flutter/material.dart';
 class Category {
   final int? id;
   final String name;
-  final String? iconResource; // 统一资源标识符：icon:name, file:path, asset:path, http://url
-  
-  Category({
-    this.id,
-    required this.name,
-    this.iconResource,
-  });
-  
+  final String?
+  iconResource; // 统一资源标识符：icon:name, file:path, asset:path, http://url
+
+  Category({this.id, required this.name, this.iconResource});
+
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'iconResource': iconResource,
-    };
+    return {'id': id, 'name': name, 'iconResource': iconResource};
   }
-  
+
   factory Category.fromMap(Map<String, dynamic> map) {
     return Category(
       id: map['id'],
@@ -27,34 +20,57 @@ class Category {
       iconResource: map['iconResource'] ?? map['iconName'], // 向后兼容
     );
   }
-  
-  Category copyWith({
-    int? id,
-    String? name,
-    String? iconResource,
-  }) {
+
+  Category copyWith({int? id, String? name, String? iconResource}) {
     return Category(
       id: id ?? this.id,
       name: name ?? this.name,
       iconResource: iconResource ?? this.iconResource,
     );
   }
-  
-  /// 获取图标Widget
+
+  static final Map<String, IconData> flutterIcons = {
+    'apps': Icons.apps,
+    'folder': Icons.folder,
+    'settings': Icons.settings,
+    'code': Icons.code,
+    'web': Icons.web,
+    'desktop_windows': Icons.desktop_windows,
+    'phone_android': Icons.phone_android,
+    'terminal': Icons.terminal,
+    'storage': Icons.storage,
+    'source': Icons.source,
+    'work': Icons.work,
+    'description': Icons.description,
+    'calculate': Icons.calculate,
+    'palette': Icons.palette,
+    'music_note': Icons.music_note,
+    'videocam': Icons.videocam,
+    'games': Icons.games,
+    'security': Icons.security,
+    'build': Icons.build,
+    'cloud': Icons.cloud,
+    'school': Icons.school,
+    'translate': Icons.translate,
+    'more_horiz': Icons.more_horiz,
+    'star': Icons.star,
+    'folder_special': Icons.folder_special,
+  };
+
   Widget getIcon({double size = 24.0}) {
     if (iconResource == null) {
       return Icon(Icons.folder, size: size); // 默认图标
     }
-    
+
     final resource = iconResource!;
-    
+
     // Flutter图标
     if (resource.startsWith('icon:')) {
       final iconName = resource.substring(5);
       final iconData = _getFlutterIcon(iconName);
       return Icon(iconData ?? Icons.help, size: size);
     }
-    
+
     // 本地文件
     if (resource.startsWith('file:')) {
       final filePath = resource.substring(5);
@@ -62,11 +78,12 @@ class Category {
         File(filePath),
         width: size,
         height: size,
-        errorBuilder: (context, error, stackTrace) => 
-          Icon(Icons.broken_image, size: size),
+        errorBuilder:
+            (context, error, stackTrace) =>
+                Icon(Icons.broken_image, size: size),
       );
     }
-    
+
     // 应用资源
     if (resource.startsWith('asset:')) {
       final assetPath = resource.substring(6);
@@ -74,65 +91,28 @@ class Category {
         assetPath,
         width: size,
         height: size,
-        errorBuilder: (context, error, stackTrace) => 
-          Icon(Icons.broken_image, size: size),
+        errorBuilder:
+            (context, error, stackTrace) =>
+                Icon(Icons.broken_image, size: size),
       );
     }
-    
+
     // 网络图片
     if (resource.startsWith('http')) {
       return Image.network(
         resource,
         width: size,
         height: size,
-        errorBuilder: (context, error, stackTrace) => 
-          Icon(Icons.broken_image, size: size),
+        errorBuilder:
+            (context, error, stackTrace) =>
+                Icon(Icons.broken_image, size: size),
       );
     }
-    
+
     return Icon(Icons.help, size: size);
   }
-  
-  /// Flutter图标名称映射
-  IconData? _getFlutterIcon(String name) {
-    final iconMap = {
-      'apps': Icons.apps,
-      'folder': Icons.folder,
-      'settings': Icons.settings,
-      'code': Icons.code,
-      'web': Icons.web,
-      'desktop_windows': Icons.desktop_windows,
-      'phone_android': Icons.phone_android,
-      'terminal': Icons.terminal,
-      'storage': Icons.storage,
-      'source': Icons.source,
-      'work': Icons.work,
-      'description': Icons.description,
-      'calculate': Icons.calculate,
-      'palette': Icons.palette,
-      'music_note': Icons.music_note,
-      'videocam': Icons.videocam,
-      'games': Icons.games,
-      'security': Icons.security,
-      'build': Icons.build,
-      'cloud': Icons.cloud,
-      'school': Icons.school,
-      'translate': Icons.translate,
-      'more_horiz': Icons.more_horiz,
-      'star': Icons.star,
-      'folder_special': Icons.folder_special,
-    };
-    return iconMap[name];
-  }
-  
 
-  /// 获取图标类型
-  String get iconType {
-    if (iconResource == null) return 'default';
-    if (iconResource!.startsWith('icon:')) return 'flutter';
-    if (iconResource!.startsWith('file:')) return 'file';
-    if (iconResource!.startsWith('asset:')) return 'asset';
-    if (iconResource!.startsWith('http')) return 'network';
-    return 'unknown';
+  IconData? _getFlutterIcon(String name) {
+    return flutterIcons[name];
   }
 }

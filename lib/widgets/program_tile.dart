@@ -33,6 +33,20 @@ class ProgramTile extends StatefulWidget {
 class _ProgramTileState extends State<ProgramTile> {
   bool _isHovering = false;
 
+  void _showMessage(
+    String message, {
+    Color color = Colors.green,
+    int duration = 2,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: duration),
+        backgroundColor: color,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -308,33 +322,20 @@ class _ProgramTileState extends State<ProgramTile> {
       await databaseService.updateProgram(updatedProgram);
 
       // 显示成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            newCategory != null
-                ? AppLocalizations.of(
-                  context,
-                )!.programMovedToCategory(widget.program.name, newCategory)
-                : AppLocalizations.of(
-                  context,
-                )!.programRemovedFromCategory(widget.program.name),
-          ),
-          duration: Duration(seconds: 2),
-        ),
+      _showMessage(
+        newCategory != null
+            ? AppLocalizations.of(context)!.programMovedToCategory(widget.program.name, newCategory)
+            : AppLocalizations.of(context)!.programRemovedFromCategory(widget.program.name),
+
       );
 
       // 通知父组件刷新
       widget.onCategoryChanged?.call();
     } catch (e) {
       // 显示错误提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.changeCategoryFailed(e.toString()),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.changeCategoryFailed(e.toString()),
+        color: Colors.red,
       );
     }
   }

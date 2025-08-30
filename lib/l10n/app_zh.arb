@@ -21,10 +21,16 @@
   "categoryAddSuccess": "类别 \"{categoryName}\" 添加成功",
   "addCategoryFailed": "添加类别失败: {error}",
   "categoryDeletedWithPrograms": "类别 \"{categoryName}\" 及其下的 {count} 个程序已删除",
+  "desktopCategoryCannotDelete": "桌面类别不能删除",
 
   "addingPrograms": "正在添加程序...",
   "programsAddedSuccess": "成功添加 {count} 个程序",
   "addProgramsFailed": "添加失败，请检查文件格式",
+  "desktopOrganizeSuccess": "桌面整理完成！已备份 {count} 个项目",
+  "desktopOrganizeFailed": "桌面整理失败: {error}",
+  "noDesktopItemsToOrganize": "桌面没有可整理的项目",
+  "desktopRestoreSuccess": "桌面恢复完成！",
+  "desktopRestoreFailed": "桌面恢复失败: {error}",
 
   "noProgramsMessage": "暂无程序\n拖拽程序文件到此区域添加",
   "delete": "删除",

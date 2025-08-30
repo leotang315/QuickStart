@@ -48,6 +48,12 @@
     }
   },
   "addCategoryFailed": "Failed to add category: {error}",
+  "desktopCategoryCannotDelete": "Desktop category cannot be deleted",
+  "desktopOrganizeSuccess": "Desktop organization completed! Backed up {count} items",
+  "desktopOrganizeFailed": "Desktop organization failed: {error}",
+  "noDesktopItemsToOrganize": "No items to organize on desktop",
+  "desktopRestoreSuccess": "Desktop restore completed!",
+  "desktopRestoreFailed": "Desktop restore failed: {error}",
   "languageToggle": "Language / 语言",
   "minimize": "Minimize",
   "maximize": "Maximize",

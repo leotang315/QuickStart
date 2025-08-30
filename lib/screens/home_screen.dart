@@ -30,28 +30,23 @@ class _HomeScreenState extends State<HomeScreen> {
   final DesktopScannerService _desktopScannerService = DesktopScannerService();
   List<Program> _programs = [];
   List<Category> _categories = [];
-  String _searchQuery = '';
   Category? _selectedCategory;
-
+  String _searchQuery = '';
   bool _isSidebarExpanded = false;
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  late VoidCallback _searchFocusListener;
   bool _isDragging = false;
   bool _isOverlayVisible = false;
-  late VoidCallback _searchFocusListener;
-  bool _isEditMode = false;
-
+  bool _isProgramEditMode = false;
   bool _isCategoryEditMode = false;
-  String? _categoryToDelete;
-
-  // 桌面整理相关状态
   bool _hasDesktopBackup = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPrograms();
+    _loadProgramsAndCategories();
     _checkDesktopBackup();
 
     // 监听搜索框焦点变化
@@ -122,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.onLanguageChanged(Locale(languageCode));
   }
 
-  Future<void> _loadPrograms() async {
+  Future<void> _loadProgramsAndCategories() async {
     final programs = await _databaseService.getPrograms();
     final categories = await _databaseService.getCategories();
 
@@ -143,56 +138,35 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteProgram(Program program) async {
     try {
       await _databaseService.deleteProgram(program.id!);
-      await _loadPrograms(); // 重新加载程序列表
+      await _loadProgramsAndCategories();
 
-      // 显示删除成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.programDeleted(program.name),
-          ),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      _showMessage(AppLocalizations.of(context)!.programDeleted(program.name));
     } catch (e) {
-      // 显示删除失败提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.deleteFailed(e.toString()),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.deleteFailed(e.toString()),
+        color: Colors.red,
       );
     }
   }
 
-  Future<void> _deleteCategory(String category) async {
+  Future<void> _deleteCategory(Category category) async {
     try {
       // 保护桌面类别，不允许删除
-      if (category == '桌面') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('桌面类别不能删除'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
+      if (category.name == '桌面') {
+        _showMessage(
+          AppLocalizations.of(context)!.desktopCategoryCannotDelete,
+          color: Colors.orange,
         );
         return;
       }
 
-      // 获取分类信息
-      final categoryData = _categories.firstWhere(
-        (cat) => cat.name == category,
-        orElse: () => Category(name: '', iconResource: ''),
-      );
-      if (categoryData.id == null) {
-        LogService.error('Category not found: $category', null);
+      // 检查分类ID是否有效
+      if (category.id == null) {
+        LogService.error('Category ID is null: ${category.name}', null);
         return;
       }
 
-      final categoryId = categoryData.id!;
+      final categoryId = category.id!;
 
       // 获取该类别下的程序数量
       final programsInCategory = await _databaseService.getProgramsByCategoryId(
@@ -206,37 +180,25 @@ class _HomeScreenState extends State<HomeScreen> {
       // 从数据库中删除类别记录
       await _databaseService.deleteCategory(categoryId);
 
-      // 从类别列表中移除该类别
-      setState(() {
-        _categories.removeWhere((cat) => cat.name == category);
-        // 如果当前选中的是被删除的类别，切换到第一个可用类别
-        if (_selectedCategory?.name == category) {
-          _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
-        }
-      });
+      // 如果当前选中的是被删除的类别，清空选择（重新加载时会自动选择第一个类别）
+      if (_selectedCategory?.id == category.id) {
+        setState(() {
+          _selectedCategory = null;
+        });
+      }
 
-      // 重新加载程序列表
-      await _loadPrograms();
+      // 重新加载程序和类别列表
+      await _loadProgramsAndCategories();
 
-      // 显示删除成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(
-              context,
-            )!.categoryDeletedWithPrograms(category, programCount),
-          ),
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(
+          context,
+        )!.categoryDeletedWithPrograms(category.name, programCount),
       );
     } catch (e) {
-      // 显示删除失败提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('删除失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.deleteFailed(e.toString()),
+        color: Colors.red,
       );
     }
   }
@@ -296,8 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (desktopItems.isEmpty) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('桌面没有可整理的项目'), backgroundColor: Colors.orange),
+        _showMessage(
+          AppLocalizations.of(context)!.noDesktopItemsToOrganize,
+          color: Colors.orange,
         );
         return;
       }
@@ -336,25 +299,23 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // 重新加载程序列表
-      await _loadPrograms();
+      await _loadProgramsAndCategories();
 
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('桌面整理完成！已备份 ${desktopItems.length} 个项目'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(
+          context,
+        )!.desktopOrganizeSuccess(desktopItems.length),
+        color: Colors.green,
+        duration: 3,
       );
     } catch (e) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('桌面整理失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.desktopOrganizeFailed(e.toString()),
+        color: Colors.red,
+        duration: 3,
       );
     }
   }
@@ -437,25 +398,19 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // 重新加载程序列表
-      await _loadPrograms();
+      await _loadProgramsAndCategories();
 
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('桌面恢复完成！'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.desktopRestoreSuccess,
+        color: Colors.green,
       );
     } catch (e) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('桌面恢复失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        AppLocalizations.of(context)!.desktopRestoreFailed(e.toString()),
+        color: Colors.red,
       );
     }
   }
@@ -677,14 +632,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                               mainAxisSpacing: 6,
                                               childAspectRatio: 1,
                                             ),
-                                        itemCount:
-                                            CategoryIconService
-                                                .categoryIcons
-                                                .length,
+                                        itemCount: Category.flutterIcons.length,
                                         itemBuilder: (context, index) {
-                                          final categoryIcon =
-                                              CategoryIconService
-                                                  .categoryIcons[index];
+                                          final categoryIcon =  Category.flutterIcons.entries.elementAt(index).value;
+
+
                                           final iconResource =
                                               CategoryIconService.getIconResource(
                                                 "",
@@ -797,34 +749,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
 
                                 // 重新加载数据以更新_categories
-                                await _loadPrograms();
+                                await _loadProgramsAndCategories();
 
                                 Navigator.pop(context);
 
                                 // 显示成功提示
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.categoryAddSuccess(name),
-                                    ),
-                                    backgroundColor: Colors.green,
-                                    duration: Duration(seconds: 2),
-                                  ),
+                                _showMessage(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.categoryAddSuccess(name),
+                                  color: Colors.green,
                                 );
                               } catch (e) {
                                 // 显示错误提示
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.addCategoryFailed(e.toString()),
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    duration: Duration(seconds: 3),
-                                  ),
+                                _showMessage(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.addCategoryFailed(e.toString()),
+                                  color: Colors.red,
                                 );
                               }
                             }
@@ -859,136 +801,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showDeleteCategoryDialog(String category) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 16,
-            child: Container(
-              width: 400,
-              padding: EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title area
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Color(0xFFFF6B35).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.warning_rounded,
-                          color: Color(0xFFFF6B35),
-                          size: 20,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        AppLocalizations.of(context)!.confirmDeleteCategory,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1F2937),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  // Content
-                  Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.deleteCategoryMessage(category),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF374151),
-                      height: 1.5,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.of(context)!.deleteCategoryWarning,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6B7280),
-                      height: 1.4,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  // Actions
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          '取消',
-                          style: TextStyle(
-                            color: Color(0xFF6B7280),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () async {
-                          Navigator.pop(context);
-                          await _deleteCategory(category);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFDC2626),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          '删除',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-  }
-
   void _showAnimatedOverlay() {
     setState(() {
       _isOverlayVisible = true;
@@ -1003,9 +815,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _hideAllDeleteButtons() {
     setState(() {
-      _isEditMode = false;
+      _isProgramEditMode = false;
       _isCategoryEditMode = false;
-      _categoryToDelete = null;
     });
   }
 
@@ -1058,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Navigator.pop(context);
 
       // 重新加载程序列表
-      await _loadPrograms();
+      await _loadProgramsAndCategories();
 
       // // 显示添加结果
       // ScaffoldMessenger.of(context).showSnackBar(
@@ -1120,22 +931,30 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.pop(context);
 
       // 重新加载程序列表
-      await _loadPrograms();
+      await _loadProgramsAndCategories();
 
       // 显示添加结果
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            successCount > 0
-                ? AppLocalizations.of(
-                  context,
-                )!.programsAddedSuccess(successCount)
-                : AppLocalizations.of(context)!.addProgramsFailed,
-          ),
-          duration: Duration(seconds: 3),
-        ),
+      _showMessage(
+        successCount > 0
+            ? AppLocalizations.of(context)!.programsAddedSuccess(successCount)
+            : AppLocalizations.of(context)!.addProgramsFailed,
       );
     }
+  }
+
+  void _showMessage(
+    String message, {
+    Color color = Colors.green,
+    int duration = 2,
+  }) {
+    // 显示删除成功提示
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: duration),
+        backgroundColor: color,
+      ),
+    );
   }
 
   // 头部组件函数
@@ -1293,18 +1112,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final category = _categories[index];
                   final isSelected = _selectedCategory?.id == category.id;
-                  final iconWidget = _categories[index].getIcon();
 
                   return _buildCategoryItem(
-                    category: category.name,
-                    iconWidget: iconWidget,
+                    category: category,
                     isSelected: isSelected,
                     onTap: () {
                       setState(() {
                         _selectedCategory = category;
                       });
                     },
-                    onDelete: () => _deleteCategory(category.name),
+                    onDelete: () => _deleteCategory(category),
                   );
                 },
               ),
@@ -1379,14 +1196,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 类别项组件方法
   Widget _buildCategoryItem({
-    required String category,
-    required Widget iconWidget,
+    required Category category,
     required bool isSelected,
     required VoidCallback onTap,
     VoidCallback? onDelete,
   }) {
-    bool showDeleteButton =
-        _isEditMode && _isCategoryEditMode && category != '桌面';
+    bool showDeleteButton = _isProgramEditMode && category.name != '桌面';
 
     return Stack(
       children: [
@@ -1402,9 +1217,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onLongPress: () {
               if (onDelete != null) {
                 setState(() {
-                  _isEditMode = true;
+                  _isProgramEditMode = true;
                   _isCategoryEditMode = true;
-                  _categoryToDelete = category;
                 });
               }
             },
@@ -1428,7 +1242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 30,
                     height: 30,
                     alignment: Alignment.center,
-                    child: iconWidget,
+                    child: category.getIcon(),
                   ),
                   Flexible(
                     child: AnimatedOpacity(
@@ -1439,7 +1253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
-                          category,
+                          category.name,
                           overflow: TextOverflow.clip,
                           maxLines: 1,
                           style: TextStyle(
@@ -1465,11 +1279,7 @@ class _HomeScreenState extends State<HomeScreen> {
             top: 2,
             child: GestureDetector(
               onTap: () {
-                setState(() {
-                  _isEditMode = false;
-                  _isCategoryEditMode = false;
-                  _categoryToDelete = null;
-                });
+                _hideAllDeleteButtons();
                 onDelete?.call();
               },
               child: Container(
@@ -1661,16 +1471,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                           launcherService: _launcherService,
                                           onDelete:
                                               () => _deleteProgram(program),
-                                          isEditMode: _isEditMode,
+                                          isEditMode: _isProgramEditMode,
                                           onLongPress: () {
-                                            if (!_isEditMode) {
+                                            if (!_isProgramEditMode) {
                                               setState(() {
-                                                _isEditMode = !_isEditMode;
+                                                _isProgramEditMode =
+                                                    !_isProgramEditMode;
                                               });
                                             }
                                           },
                                           onCategoryChanged: () {
-                                            _loadPrograms(); // 重新加载程序列表
+                                            _loadProgramsAndCategories(); // 重新加载程序列表
                                           },
                                         ),
                                       );
