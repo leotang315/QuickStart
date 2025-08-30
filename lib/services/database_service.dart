@@ -22,7 +22,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'quick_start.db');
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDb,
       onUpgrade: _upgradeDb,
     );
@@ -32,8 +32,8 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE categories(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        iconName TEXT
+        name TEXT NOT NULL,
+        iconResource TEXT
       )
     ''');
 
@@ -53,7 +53,7 @@ class DatabaseService {
 
     // 插入桌面类别，使用固定ID=0
     await db.execute('''
-      INSERT INTO categories (id, name, iconName) VALUES (0, '桌面', 'desktop_windows')
+      INSERT INTO categories (id, name, iconResource) VALUES (0, '桌面', 'icon:desktop_windows')
     ''');
   }
 
@@ -118,7 +118,7 @@ class DatabaseService {
   Future<List<Map<String, dynamic>>> getProgramsWithCategory() async {
     final db = await database;
     return await db.rawQuery('''
-      SELECT p.*, c.name as category_name, c.iconName as category_icon
+      SELECT p.*, c.name as category_name, c.iconResource as category_icon
       FROM programs p
       LEFT JOIN categories c ON p.category_id = c.id
       ORDER BY p.name
@@ -143,7 +143,7 @@ class DatabaseService {
 
     if (categoryId == null) {
       maps = await db.rawQuery('''
-        SELECT p.*, c.name as category_name, c.iconName as category_icon
+        SELECT p.*, c.name as category_name, c.iconResource as category_icon
         FROM programs p
         LEFT JOIN categories c ON p.category_id = c.id
         WHERE p.category_id IS NULL
@@ -152,7 +152,7 @@ class DatabaseService {
     } else {
       maps = await db.rawQuery(
         '''
-        SELECT p.*, c.name as category_name, c.iconName as category_icon
+        SELECT p.*, c.name as category_name, c.iconResource as category_icon
         FROM programs p
         LEFT JOIN categories c ON p.category_id = c.id
         WHERE p.category_id = ?

@@ -29,10 +29,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final LauncherService _launcherService = LauncherService();
   final DesktopScannerService _desktopScannerService = DesktopScannerService();
   List<Program> _programs = [];
+  List<Category> _categories = [];
   String _searchQuery = '';
-  String _selectedCategory = '';
-  List<String> _categories = [];
-  Map<String, Category> _categoryData = {}; // 存储类别数据映射
+  Category? _selectedCategory;
 
   bool _isSidebarExpanded = false;
   bool _isSearchExpanded = false;
@@ -48,11 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 桌面整理相关状态
   bool _hasDesktopBackup = false;
-
-  // 语言切换方法
-  void _changeLanguage(String languageCode) {
-    widget.onLanguageChanged(Locale(languageCode));
-  }
 
   @override
   void initState() {
@@ -79,52 +73,68 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // 获取类别图标
-  String _getCategoryIcon(String categoryName) {
-    final categoryData = _categoryData[categoryName];
-    if (categoryData?.iconName != null) {
-      // 直接返回存储的图标名称，让_buildCategoryIconWidget处理
-      return categoryData!.iconName!;
-    }
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _hideAllDeleteButtons,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 自定义标题栏
+                CustomTitleBar(
+                  title: AppLocalizations.of(context)!.appTitle,
+                  onLanguageChange: _changeLanguage,
+                ),
+                // 头部区域
+                _buildHeader(),
+                Expanded(
+                  child: Row(
+                    children: [
+                      // 侧边栏部分
+                      _buildSidebar(),
+                      // 主内容区域
+                      _buildMainContent(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
 
-    // 默认图标
-    return '📁';
+            // 动画蒙板
+            if (_isOverlayVisible)
+              AnimatedOverlay(onClose: _hideAnimatedOverlay),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAnimatedOverlay,
+          tooltip: AppLocalizations.of(context)!.addProgramTooltip,
+          child: Icon(Icons.add),
+        ),
+      ),
+    );
   }
 
-  // 构建类别图标Widget
-  Widget _buildCategoryIconWidget(String iconIdentifier) {
-    LogService.debug("Icon identifier: $iconIdentifier");
-    // 如果是emoji字符（如📱、📁），直接显示
-    // if (_isEmoji(iconIdentifier)) {
-    //   return Text(iconIdentifier, style: TextStyle(fontSize: 16));
-    // }
-
-    // 如果是CategoryIcon名称，查找对应的图标
-    final categoryIcon = CategoryIconService.getIconByName(iconIdentifier);
-    if (categoryIcon != null) {
-      return Icon(categoryIcon.icon, color: Color(0xFF6C757D), size: 16);
-    }
-
-    // 默认显示为文本
-    return Text(iconIdentifier, style: TextStyle(fontSize: 16));
+  // 语言切换方法
+  void _changeLanguage(String languageCode) {
+    widget.onLanguageChanged(Locale(languageCode));
   }
 
   Future<void> _loadPrograms() async {
     final programs = await _databaseService.getPrograms();
     final categories = await _databaseService.getCategories();
 
-    // 从数据库获取类别名称列表
-    final categoryNames = categories.map((c) => c.name).toList();
-
     setState(() {
       _programs = programs;
-      _categories = categoryNames;
-      _categoryData = {for (var cat in categories) cat.name: cat}; // 存储类别数据映射
-      
+      _categories = categories;
+
       // 如果当前选中的类别不存在，选择第一个类别或清空选择
-      if (_selectedCategory.isNotEmpty && !_categories.contains(_selectedCategory)) {
-        _selectedCategory = _categories.isNotEmpty ? _categories.first : '';
-      } else if (_selectedCategory.isEmpty && _categories.isNotEmpty) {
+      if (_selectedCategory != null &&
+          !_categories.any((c) => c.id == _selectedCategory!.id)) {
+        _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
+      } else if (_selectedCategory == null && _categories.isNotEmpty) {
         _selectedCategory = _categories.first;
       }
     });
@@ -148,12 +158,105 @@ class _HomeScreenState extends State<HomeScreen> {
       // 显示删除失败提示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.deleteFailed(e.toString())),
+          content: Text(
+            AppLocalizations.of(context)!.deleteFailed(e.toString()),
+          ),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
       );
     }
+  }
+
+  Future<void> _deleteCategory(String category) async {
+    try {
+      // 保护桌面类别，不允许删除
+      if (category == '桌面') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('桌面类别不能删除'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 获取分类信息
+      final categoryData = _categories.firstWhere(
+        (cat) => cat.name == category,
+        orElse: () => Category(name: '', iconResource: ''),
+      );
+      if (categoryData.id == null) {
+        LogService.error('Category not found: $category', null);
+        return;
+      }
+
+      final categoryId = categoryData.id!;
+
+      // 获取该类别下的程序数量
+      final programsInCategory = await _databaseService.getProgramsByCategoryId(
+        categoryId,
+      );
+      final programCount = programsInCategory.length;
+
+      // 删除该类别下的所有程序
+      await _databaseService.deleteProgramsByCategoryId(categoryId);
+
+      // 从数据库中删除类别记录
+      await _databaseService.deleteCategory(categoryId);
+
+      // 从类别列表中移除该类别
+      setState(() {
+        _categories.removeWhere((cat) => cat.name == category);
+        // 如果当前选中的是被删除的类别，切换到第一个可用类别
+        if (_selectedCategory?.name == category) {
+          _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
+        }
+      });
+
+      // 重新加载程序列表
+      await _loadPrograms();
+
+      // 显示删除成功提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.categoryDeletedWithPrograms(category, programCount),
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      // 显示删除失败提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('删除失败: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  List<Program> get _filteredPrograms {
+    return _programs.where((program) {
+      final matchesSearch = program.name.toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
+      // 如果有搜索内容，则搜索所有程序；否则按类别过滤
+      bool matchesCategory =
+          _searchQuery.isNotEmpty || _selectedCategory == null;
+
+      if (!matchesCategory && _selectedCategory != null) {
+        // 直接使用选中的分类ID
+        matchesCategory = program.categoryId == _selectedCategory!.id;
+      }
+
+      return matchesSearch && matchesCategory;
+    }).toList();
   }
 
   // 检查桌面备份状态
@@ -204,12 +307,12 @@ class _HomeScreenState extends State<HomeScreen> {
         desktopItems,
       );
 
-        // 获取桌面分类（固定ID=0）
-        Category? desktopCategory = await _databaseService.getCategoryById(0);
-        if (desktopCategory == null) {
-          LogService.error('Desktop category not found', null);
-          throw 'Desktop category not found';
-        }
+      // 获取桌面分类（固定ID=0）
+      Category? desktopCategory = await _databaseService.getCategoryById(0);
+      if (desktopCategory == null) {
+        LogService.error('Desktop category not found', null);
+        throw 'Desktop category not found';
+      }
 
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
@@ -227,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-       // 更新状态
+      // 更新状态
       setState(() {
         _hasDesktopBackup = true;
       });
@@ -307,8 +410,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final desktopCategory = await _databaseService.getCategoryByName('桌面');
         if (desktopCategory != null) {
           // 只在桌面类别中查找程序
-          final desktopPrograms = await _databaseService.getProgramsByCategoryId(desktopCategory.id);
-          
+          final desktopPrograms = await _databaseService
+              .getProgramsByCategoryId(desktopCategory.id);
+
           for (final item in backupInfo.items) {
             try {
               final program = desktopPrograms.firstWhere(
@@ -356,99 +460,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _deleteCategory(String category) async {
-    try {
-      // 保护桌面类别，不允许删除
-      if (category == '桌面') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('桌面类别不能删除'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-      
-      // 获取分类信息
-      final categoryData = _categoryData[category];
-      if (categoryData?.id == null) {
-        LogService.error('Category not found: $category', null);
-        return;
-      }
-      
-      final categoryId = categoryData!.id!;
-      
-      // 获取该类别下的程序数量
-      final programsInCategory = await _databaseService.getProgramsByCategoryId(categoryId);
-      final programCount = programsInCategory.length;
-
-      // 删除该类别下的所有程序
-      await _databaseService.deleteProgramsByCategoryId(categoryId);
-
-      // 从数据库中删除类别记录
-      await _databaseService.deleteCategory(categoryId);
-
-      // 从类别列表中移除该类别
-      setState(() {
-        _categories.remove(category);
-        _categoryData.remove(category);
-        // 如果当前选中的是被删除的类别，切换到第一个可用类别
-        if (_selectedCategory == category) {
-          _selectedCategory = _categories.isNotEmpty ? _categories.first : '';
-        }
-      });
-
-      // 重新加载程序列表
-      await _loadPrograms();
-
-      // 显示删除成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(
-              context,
-            )!.categoryDeletedWithPrograms(category, programCount),
-          ),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } catch (e) {
-      // 显示删除失败提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('删除失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  List<Program> get _filteredPrograms {
-    return _programs.where((program) {
-      final matchesSearch = program.name.toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
-      // 如果有搜索内容，则搜索所有程序；否则按类别过滤
-      bool matchesCategory = _searchQuery.isNotEmpty || _selectedCategory.isEmpty;
-      
-      if (!matchesCategory && _selectedCategory.isNotEmpty) {
-        // 根据选中的分类名称查找对应的分类ID
-        final categoryData = _categoryData[_selectedCategory];
-        if (categoryData != null) {
-          matchesCategory = program.categoryId == categoryData.id;
-        }
-      }
-      
-      return matchesSearch && matchesCategory;
-    }).toList();
-  }
-
   void _showAddCategoryDialog() {
     final TextEditingController categoryNameController =
         TextEditingController();
-    String? selectedIconName;
+    String? selectedIconResource;
     IconData? selectedIcon;
 
     showDialog(
@@ -578,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   // 当前选中的图标显示
-                                  if (selectedIconName != null) ...[
+                                  if (selectedIconResource != null) ...[
                                     Row(
                                       children: [
                                         Container(
@@ -604,7 +619,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         SizedBox(width: 8),
                                         Text(
-                                          selectedIconName!,
+                                          selectedIcon != null
+                                              ? CategoryIconService
+                                                  .categoryIcons
+                                                  .firstWhere(
+                                                    (icon) =>
+                                                        icon.icon ==
+                                                        selectedIcon,
+                                                  )
+                                                  .name
+                                              : 'Unknown',
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w500,
@@ -615,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         GestureDetector(
                                           onTap: () {
                                             setDialogState(() {
-                                              selectedIconName = null;
+                                              selectedIconResource = null;
                                               selectedIcon = null;
                                             });
                                           },
@@ -661,15 +685,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                           final categoryIcon =
                                               CategoryIconService
                                                   .categoryIcons[index];
+                                          final iconResource =
+                                              CategoryIconService.getIconResource(
+                                                "",
+                                              );
                                           final isSelected =
-                                              selectedIconName ==
-                                              categoryIcon.name;
+                                              selectedIconResource ==
+                                              iconResource;
 
                                           return GestureDetector(
                                             onTap: () {
                                               setDialogState(() {
-                                                selectedIconName =
-                                                    categoryIcon.name;
+                                                selectedIconResource =
+                                                    iconResource;
                                                 selectedIcon =
                                                     categoryIcon.icon;
                                               });
@@ -752,13 +780,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             final name = categoryNameController.text.trim();
+                            final categoryNames =
+                                _categories.map((c) => c.name).toList();
                             if (name.isNotEmpty &&
-                                !_categories.contains(name)) {
+                                !categoryNames.contains(name)) {
                               try {
                                 // 创建新类别对象
                                 final newCategory = Category(
                                   name: name,
-                                  iconName: selectedIconName,
+                                  iconResource: selectedIconResource,
                                 );
 
                                 // 保存到数据库
@@ -766,15 +796,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   newCategory,
                                 );
 
-                                // 重新加载数据以更新_categoryData
+                                // 重新加载数据以更新_categories
                                 await _loadPrograms();
-
-                                // 更新UI
-                                setState(() {
-                                  if (!_categories.contains(name)) {
-                                    _categories.add(name);
-                                  }
-                                });
 
                                 Navigator.pop(context);
 
@@ -837,7 +860,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showDeleteCategoryDialog(String category) {
-
     showDialog(
       context: context,
       builder:
@@ -1015,14 +1037,10 @@ class _HomeScreenState extends State<HomeScreen> {
       for (String filePath in filePaths) {
         try {
           final fileName = filePath.split('\\').last.split('.').first;
-          
+
           // 获取分类ID
-          int? categoryId;
-          if (_selectedCategory.isNotEmpty) {
-            final categoryData = _categoryData[_selectedCategory];
-            categoryId = categoryData?.id;
-          }
-          
+          int? categoryId = _selectedCategory?.id;
+
           final program = Program(
             name: fileName,
             path: filePath,
@@ -1081,14 +1099,10 @@ class _HomeScreenState extends State<HomeScreen> {
       for (String filePath in filePaths) {
         try {
           final fileName = filePath.split('\\').last.split('.').first;
-          
+
           // 获取分类ID
-          int? categoryId;
-          if (_selectedCategory.isNotEmpty) {
-            final categoryData = _categoryData[_selectedCategory];
-            categoryId = categoryData?.id;
-          }
-          
+          int? categoryId = _selectedCategory?.id;
+
           final program = Program(
             name: fileName,
             path: filePath,
@@ -1122,50 +1136,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _hideAllDeleteButtons,
-      child: Scaffold(
-        body: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 自定义标题栏
-                CustomTitleBar(
-                  title: AppLocalizations.of(context)!.appTitle,
-                  onLanguageChange: _changeLanguage,
-                ),
-                // 头部区域
-                _buildHeader(),
-                Expanded(
-                  child: Row(
-                    children: [
-                      // 侧边栏部分
-                      _buildSidebar(),
-                      // 主内容区域
-                      _buildMainContent(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 动画蒙板
-            if (_isOverlayVisible)
-              AnimatedOverlay(onClose: _hideAnimatedOverlay),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _showAnimatedOverlay,
-          tooltip: AppLocalizations.of(context)!.addProgramTooltip,
-          child: Icon(Icons.add),
-        ),
-      ),
-    );
   }
 
   // 头部组件函数
@@ -1322,19 +1292,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
                   final category = _categories[index];
-                  final isSelected = _selectedCategory == category;
-                  final icon = _getCategoryIcon(category);
+                  final isSelected = _selectedCategory?.id == category.id;
+                  final iconWidget = _categories[index].getIcon();
 
                   return _buildCategoryItem(
-                    category: category,
-                    icon: icon,
+                    category: category.name,
+                    iconWidget: iconWidget,
                     isSelected: isSelected,
                     onTap: () {
                       setState(() {
                         _selectedCategory = category;
                       });
                     },
-                    onDelete: () => _deleteCategory(category),
+                    onDelete: () => _deleteCategory(category.name),
                   );
                 },
               ),
@@ -1410,7 +1380,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 类别项组件方法
   Widget _buildCategoryItem({
     required String category,
-    required String icon,
+    required Widget iconWidget,
     required bool isSelected,
     required VoidCallback onTap,
     VoidCallback? onDelete,
@@ -1458,7 +1428,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 30,
                     height: 30,
                     alignment: Alignment.center,
-                    child: _buildCategoryIconWidget(icon),
+                    child: iconWidget,
                   ),
                   Flexible(
                     child: AnimatedOpacity(

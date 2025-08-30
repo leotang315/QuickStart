@@ -252,6 +252,73 @@ class CategoryIconService {
       return null;
     }
   }
+  
+  // 获取iconResource格式的字符串
+  static String getIconResource(String name) {
+    final categoryIcon = getIconByName(name);
+    if (categoryIcon == null) {
+      return 'icon:folder'; // 默认图标
+    }
+    
+    // 将CategoryIcon转换为iconResource格式
+    final iconName = _getIconNameFromIconData(categoryIcon.icon);
+    return 'icon:$iconName';
+  }
+  
+  // 获取所有可用的iconResource列表
+  static List<String> getAllIconResources() {
+    return categoryIcons.map((categoryIcon) {
+      final iconName = _getIconNameFromIconData(categoryIcon.icon);
+      return 'icon:$iconName';
+    }).toList();
+  }
+  
+  // 根据IconData获取图标名称
+  static String _getIconNameFromIconData(IconData iconData) {
+    final iconMap = {
+      Icons.apps: 'apps',
+      Icons.desktop_windows: 'desktop_windows',
+      Icons.phone_android: 'phone_android',
+      Icons.web: 'web',
+      Icons.code: 'code',
+      Icons.terminal: 'terminal',
+      Icons.storage: 'storage',
+      Icons.source: 'source',
+      Icons.work: 'work',
+      Icons.description: 'description',
+      Icons.calculate: 'calculate',
+      Icons.palette: 'palette',
+      Icons.music_note: 'music_note',
+      Icons.videocam: 'videocam',
+      Icons.games: 'games',
+      Icons.security: 'security',
+      Icons.build: 'build',
+      Icons.cloud: 'cloud',
+      Icons.school: 'school',
+      Icons.translate: 'translate',
+      Icons.more_horiz: 'more_horiz',
+      Icons.star: 'star',
+      Icons.folder_special: 'folder_special',
+    };
+    return iconMap[iconData] ?? 'folder';
+  }
+  
+  // 根据iconResource获取CategoryIcon（用于UI显示）
+  static CategoryIcon? getCategoryIconFromResource(String iconResource) {
+    if (!iconResource.startsWith('icon:')) {
+      return null;
+    }
+    
+    final iconName = iconResource.substring(5);
+    return categoryIcons.firstWhere(
+      (icon) => _getIconNameFromIconData(icon.icon) == iconName,
+      orElse: () => CategoryIcon(
+        name: '未知图标',
+        icon: Icons.help,
+        description: '未知的图标类型',
+      ),
+    );
+  }
 }
 
 class CategoryIcon {

@@ -192,15 +192,10 @@ class _ProgramTileState extends State<ProgramTile> {
             padding: EdgeInsets.only(left: 12),
             child: Row(
               children: [
-                Icon(
-                  () {
-                    final iconData = CategoryIconService.getIconByName(
-                      category.iconName ?? '',
-                    );
-                    return iconData?.icon ?? Icons.folder;
-                  }(),
-                  size: 16,
-                  color: Color(0xFF495057),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: category.getIcon(size: 16),
                 ),
                 SizedBox(width: 8),
                 Expanded(
