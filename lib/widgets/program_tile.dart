@@ -6,8 +6,6 @@ import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/database_service.dart';
 
-import '../services/category_icon_service.dart';
-
 class ProgramTile extends StatefulWidget {
   final Program program;
   final LauncherService launcherService;

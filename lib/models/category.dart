@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class Category {
   final int? id;
   final String name;
-  final String?
-  iconResource; // 统一资源标识符：icon:name, file:path, asset:path, http://url
+  // 统一资源标识符：icon:name, file:path, asset:path, http://url
+  final String? iconResource;
 
   Category({this.id, required this.name, this.iconResource});
 
@@ -17,7 +17,7 @@ class Category {
     return Category(
       id: map['id'],
       name: map['name'],
-      iconResource: map['iconResource'] ?? map['iconName'], // 向后兼容
+      iconResource: map['iconResource'] 
     );
   }
 

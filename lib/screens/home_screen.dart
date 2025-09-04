@@ -7,7 +7,6 @@ import '../models/program.dart';
 import '../models/category.dart';
 import '../services/database_service.dart';
 import '../services/launcher_service.dart';
-import '../services/category_icon_service.dart';
 import '../services/language_service.dart';
 import '../services/desktop_scanner_service.dart';
 import '../services/log_service.dart';
@@ -573,16 +572,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                         SizedBox(width: 8),
+
                                         Text(
                                           selectedIcon != null
-                                              ? CategoryIconService
-                                                  .categoryIcons
+                                              ? Category.flutterIcons.entries
                                                   .firstWhere(
                                                     (icon) =>
-                                                        icon.icon ==
+                                                        icon.value ==
                                                         selectedIcon,
                                                   )
-                                                  .name
+                                                  .key
                                               : 'Unknown',
                                           style: TextStyle(
                                             fontSize: 13,
@@ -634,13 +633,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ),
                                         itemCount: Category.flutterIcons.length,
                                         itemBuilder: (context, index) {
-                                          final categoryIcon =  Category.flutterIcons.entries.elementAt(index).value;
-
+                                          final categoryIcon =
+                                              Category.flutterIcons.entries
+                                                  .elementAt(index)
+                                                  .value;
 
                                           final iconResource =
-                                              CategoryIconService.getIconResource(
-                                                "",
-                                              );
+                                              "icon:" +
+                                              Category.flutterIcons.entries
+                                                  .elementAt(index)
+                                                  .key;
+
                                           final isSelected =
                                               selectedIconResource ==
                                               iconResource;
@@ -650,8 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               setDialogState(() {
                                                 selectedIconResource =
                                                     iconResource;
-                                                selectedIcon =
-                                                    categoryIcon.icon;
+                                                selectedIcon = categoryIcon;
                                               });
                                             },
                                             child: Container(
@@ -673,7 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ),
                                               ),
                                               child: Icon(
-                                                categoryIcon.icon,
+                                                categoryIcon,
                                                 size: 16,
                                                 color:
                                                     isSelected
