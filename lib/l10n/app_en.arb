@@ -120,5 +120,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addCategory": "Add Category",
+  "selectIcon": "Select Icon",
+  "selected": "Selected",
+  "enterCategoryName": "Please enter category name",
+  "categoryNameCannotBeEmpty": "Category name cannot be empty",
+  "categoryNameAlreadyExists": "Category name already exists"
 }

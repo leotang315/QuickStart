@@ -68,5 +68,11 @@
         "type": "String"
       }
     }
-  }
+  },
+  "addCategory": "添加类别",
+  "selectIcon": "选择图标",
+  "selected": "已选择",
+  "enterCategoryName": "请输入类别名称",
+  "categoryNameCannotBeEmpty": "类别名称不能为空",
+  "categoryNameAlreadyExists": "类别名称已存在"
 }
