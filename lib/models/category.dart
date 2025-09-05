@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class Category {
   final int? id;
   final String name;
-  // 统一资源标识符：icon:name, file:path, asset:path, http://url
+  // 统一资源标识符：icon:name, file:path, http://url
   final String? iconResource;
 
   Category({this.id, required this.name, this.iconResource});
@@ -84,18 +84,7 @@ class Category {
       );
     }
 
-    // 应用资源
-    if (resource.startsWith('asset:')) {
-      final assetPath = resource.substring(6);
-      return Image.asset(
-        assetPath,
-        width: size,
-        height: size,
-        errorBuilder:
-            (context, error, stackTrace) =>
-                Icon(Icons.broken_image, size: size),
-      );
-    }
+
 
     // 网络图片
     if (resource.startsWith('http')) {

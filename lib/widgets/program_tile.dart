@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/program.dart';
-import '../services/icon_service.dart';
+import '../services/file_icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/database_service.dart';
 
@@ -101,7 +101,7 @@ class _ProgramTileState extends State<ProgramTile> {
                     ),
                     child: Center(
                       child:
-                          IconService.getFileIcon(
+                          FileIconService.getImage(
                             widget.program.path,
                             size: IconSize.jumbo,
                           ) ??

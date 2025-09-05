@@ -1,322 +1,521 @@
-import 'dart:ffi';
-import 'dart:math';
-import 'dart:typed_data';
-import 'dart:ui';
-import 'package:ffi/ffi.dart';
-import 'package:win32/win32.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import '../models/custom_icon.dart';
+import 'database_service.dart';
 
-import '../utls/raw_image_provider.dart';
-import 'log_service.dart';
-
-// 在文件顶部添加 DLL 引用
-final shell32 = DynamicLibrary.open('shell32.dll');
-final comctl32 = DynamicLibrary.open('comctl32.dll');
-
-// IImageList GUID
-const String IID_IImageList = '{46EB5926-582E-4017-9FDF-E8998DAA0950}';
-// IImageList GUID
-
-// Shell image list size constants
-const int SHIL_LARGE = 0x0; // 32x32 = 0x0;      // 32x32
-const int SHIL_SMALL = 0x1; // 16x16
-const int SHIL_EXTRALARGE = 0x2; // 48x48
-const int SHIL_SYSSMALL = 0x3; // 系统小图标尺寸
-const int SHIL_JUMBO = 0x4; // 256x256
-const int ILD_TRANSPARENT = 0x1;
-// 添加 SHGetImageList 函数定义
-final SHGetImageList = shell32
-    .lookupFunction<
-      Int32 Function(
-        Int32 iImageList,
-        Pointer<GUID> riid,
-        Pointer<Pointer> ppv,
-      ),
-      int Function(int iImageList, Pointer<GUID> riid, Pointer<Pointer> ppv)
-    >('SHGetImageList');
-
-// 添加 IImageList_GetIcon 函数定义
-final IImageList_GetIcon = comctl32
-    .lookupFunction<
-      Int32 Function(
-        Pointer handle,
-        Int32 i,
-        Int32 flags,
-        Pointer<IntPtr> icon,
-      ),
-      int Function(Pointer handle, int i, int flags, Pointer<IntPtr> icon)
-    >('ImageList_GetIcon');
-final ImageList_GetIcon = comctl32
-    .lookupFunction<
-      IntPtr Function(Pointer himl, Int32 i, Uint32 flags),
-      int Function(Pointer himl, int i, int flags)
-    >('ImageList_GetIcon');
-
-// 在类外部定义枚举
-enum IconSize {
-  small, // 16x16
-  large, // 32x32
-  jumbo, // 256x256
+/// 图标资源类型枚举
+enum IconResourceType {
+  icon, // 预定义图标 (icon:name)
+  emoji, // emoji (emoji:char)
+  customIcon, // 自定义图标 (custom:id)
+  file, // 本地文件 (file:path)
+  network, // 网络图片 (network:url)
+  unknown, // 未知类型
 }
 
+/// 图标服务类
+/// 提供统一的图标Widget获取接口
 class IconService {
-  static bool _isInitialized = false;
-  static final Map<String, Image> _iconCache = {};
+  static final IconService _instance = IconService._internal();
+  factory IconService() => _instance;
+  IconService._internal();
 
-  static Image? getFileIcon(String filePath, {IconSize size = IconSize.small}) {
-    // 检查缓存
-    final cacheKey = '$filePath-${size.toString()}';
-    if (_iconCache.containsKey(cacheKey)) {
-      return _iconCache[cacheKey];
-    }
-    _ensureInitialized();
-    final psfi = calloc<SHFILEINFO>();
-    final pathPtr = filePath.toNativeUtf16();
-    Image? icon;
+  static IconService get instance => _instance;
 
-    try {
-      // 获取图标
-      icon = size == IconSize.jumbo
-          ? _getJumboIcon(pathPtr, psfi)
-          : _getNormalIcon(pathPtr, psfi, size);
+  /// 默认的fallback图标
+  static const IconData _defaultFallbackIcon = Icons.help_outline;
 
-      // 添加到缓存
-      if (icon != null) {
-        _iconCache[cacheKey] = icon;
-      }
+  /// 预定义图标列表
+  static const Map<String, String> _predefinedIconsMap = {
+    'home': 'icon:home',
+    'settings': 'icon:settings',
+    'search': 'icon:search',
+    'favorite': 'icon:favorite',
+    'star': 'icon:star',
+    'folder': 'icon:folder',
+    'file': 'icon:file',
+    'edit': 'icon:edit',
+    'delete': 'icon:delete',
+    'add': 'icon:add',
+    'remove': 'icon:remove',
+    'save': 'icon:save',
+    'download': 'icon:download',
+    'upload': 'icon:upload',
+    'share': 'icon:share',
+    'copy': 'icon:copy',
+    'cut': 'icon:cut',
+    'paste': 'icon:paste',
+    'undo': 'icon:undo',
+    'redo': 'icon:redo',
+  };
 
-      return icon;
-    } finally {
-      free(pathPtr);
-      free(psfi);
-    }
-  }
+  /// 常用emoji列表
+  static const Map<String, String> _commonEmojisMap = {
+    '😀': 'emoji:😀',
+    '😃': 'emoji:😃',
+    '😄': 'emoji:😄',
+    '😁': 'emoji:😁',
+    '😆': 'emoji:😆',
+    '😅': 'emoji:😅',
+    '😂': 'emoji:😂',
+    '🤣': 'emoji:🤣',
+    '😊': 'emoji:😊',
+    '😇': 'emoji:😇',
+    '🙂': 'emoji:🙂',
+    '🙃': 'emoji:🙃',
+    '😉': 'emoji:😉',
+    '😌': 'emoji:😌',
+    '😍': 'emoji:😍',
+    '🥰': 'emoji:🥰',
+    '😘': 'emoji:😘',
+    '😗': 'emoji:😗',
+    '😙': 'emoji:😙',
+    '😚': 'emoji:😚',
+    '😋': 'emoji:😋',
+    '😛': 'emoji:😛',
+    '😝': 'emoji:😝',
+    '😜': 'emoji:😜',
+    '🤪': 'emoji:🤪',
+    '🤨': 'emoji:🤨',
+    '🧐': 'emoji:🧐',
+    '🤓': 'emoji:🤓',
+    '😎': 'emoji:😎',
+    '🤩': 'emoji:🤩',
+    '🥳': 'emoji:🥳',
+    '😏': 'emoji:😏',
+    '⭐': 'emoji:⭐',
+    '🌟': 'emoji:🌟',
+    '💫': 'emoji:💫',
+    '✨': 'emoji:✨',
+    '🔥': 'emoji:🔥',
+    '💯': 'emoji:💯',
+    '💢': 'emoji:💢',
+    '💥': 'emoji:💥',
+    '💦': 'emoji:💦',
+    '💨': 'emoji:💨',
+    '🕳️': 'emoji:🕳️',
+    '💣': 'emoji:💣',
+    '💬': 'emoji:💬',
+    '👁️‍🗨️': 'emoji:👁️‍🗨️',
+    '🗨️': 'emoji:🗨️',
+    '🗯️': 'emoji:🗯️',
+    '💭': 'emoji:💭',
+    '💤': 'emoji:💤',
+    '👋': 'emoji:👋',
+    '🤚': 'emoji:🤚',
+    '🖐️': 'emoji:🖐️',
+    '✋': 'emoji:✋',
+    '🖖': 'emoji:🖖',
+    '👌': 'emoji:👌',
+    '🤏': 'emoji:🤏',
+    '✌️': 'emoji:✌️',
+    '🤞': 'emoji:🤞',
+    '🤟': 'emoji:🤟',
+    '🤘': 'emoji:🤘',
+    '🤙': 'emoji:🤙',
+    '👈': 'emoji:👈',
+    '👉': 'emoji:👉',
+    '👆': 'emoji:👆',
+    '🖕': 'emoji:🖕',
+    '👇': 'emoji:👇',
+    '☝️': 'emoji:☝️',
+    '👍': 'emoji:👍',
+    '👎': 'emoji:👎',
+    '✊': 'emoji:✊',
+    '👊': 'emoji:👊',
+    '🤛': 'emoji:🤛',
+    '🤜': 'emoji:🤜',
+    '👏': 'emoji:👏',
+    '🙌': 'emoji:🙌',
+    '👐': 'emoji:👐',
+    '🤲': 'emoji:🤲',
+    '🤝': 'emoji:🤝',
+    '🙏': 'emoji:🙏',
+  };
 
-  static void _ensureInitialized() {
-    if (!_isInitialized) {
-      CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-      _isInitialized = true;
-    }
-  }
-
-  static void dispose() {
-    if (_isInitialized) {
-      CoUninitialize();
-      _isInitialized = false;
-      _iconCache.clear();
-    }
-  }
-
-  // 将大图标获取逻辑拆分到单独的方法
-  static Image? _getJumboIcon(
-    Pointer<Utf16> pathPtr,
-    Pointer<SHFILEINFO> psfi,
-  ) {
-    final imageList = calloc<Pointer>();
-    final iidImageList = GUIDFromString(IID_IImageList);
-    try {
-      final hr = SHGetImageList(SHIL_JUMBO, iidImageList, imageList.cast());
-
-      if (FAILED(hr)) {
-        free(iidImageList);
-        free(imageList);
-        return null;
-      }
-
-      // 获取文件信息以得到图标索引
-      final result = SHGetFileInfo(
-        pathPtr,
-        0,
-        psfi,
-        sizeOf<SHFILEINFO>(),
-        SHGFI_SYSICONINDEX,
-      );
-
-      if (result == 0) {
-        free(iidImageList);
-        free(imageList);
-        return null;
-      }
-
-      // 从图像列表中获取图标
-      final hIcon = ImageList_GetIcon(
-        imageList.value,
-        psfi.ref.iIcon,
-        ILD_TRANSPARENT,
-      );
-
-      if (hIcon == NULL) {
-        free(iidImageList);
-        free(imageList);
-        return null;
-      }
-
-      final iconHandle = hIcon;
-      free(iidImageList);
-      free(imageList);
-
-      final icon = _processIcon(iconHandle);
-      if (icon == null) {
-        return _getNormalIcon(pathPtr, psfi, IconSize.large);
-      }
-      return icon;
-    } catch (e) {
-      free(iidImageList);
-      free(imageList);
-
-      return null;
-    }
-  }
-
-  // 将普通图标获取逻辑拆分到单独的方法
-  static Image? _getNormalIcon(
-    Pointer<Utf16> pathPtr,
-    Pointer<SHFILEINFO> psfi,
-    IconSize size,
-  ) {
-    final result = SHGetFileInfo(
-      pathPtr,
-      0,
-      psfi,
-      sizeOf<SHFILEINFO>(),
-      SHGFI_ICON | (size == IconSize.small ? SHGFI_SMALLICON : SHGFI_LARGEICON),
+  /// 根据iconResource参数获取对应的Widget
+  ///
+  /// 支持的格式：
+  /// - icon:icon_name (预定义图标)
+  /// - emoji:emoji_char (emoji)
+  /// - file:path (本地文件)
+  /// - custom:id (自定义图标)
+  /// - network:url (网络图片)
+  ///
+  /// [iconResource] 图标资源字符串，可以为null
+  /// [size] 图标大小，默认24.0
+  /// [color] 图标颜色，可选
+  /// [fallback] 当图标无法加载时的备用Widget
+  ///
+  /// 返回对应的Widget，如果iconResource为null或无效，返回默认图标
+  Widget getIconWidget(
+    String? iconResource, {
+    double size = 24.0,
+    Color? color,
+  }) {
+    final fallbackWidget = Icon(
+      _defaultFallbackIcon,
+      size: size,
+      color: color ?? Colors.grey,
     );
+    // 如果iconResource为null或空字符串，返回默认图标
+    if (iconResource == null || iconResource.isEmpty) {
+      return fallbackWidget;
+    }
 
-    if (result == 0) return null;
+    final type = getIconResourceType(iconResource);
 
-    final iconHandle = psfi.ref.hIcon;
-    if (iconHandle == NULL) return null;
-
-    return _processIcon(iconHandle);
+    switch (type) {
+      case IconResourceType.icon:
+        return _buildPreDefinedIcon(iconResource, size, color, fallbackWidget);
+      case IconResourceType.emoji:
+        return _buildEmojiIcon(iconResource, size, color, fallbackWidget);
+      case IconResourceType.customIcon:
+        return _buildCustomIcon(iconResource, size, color, fallbackWidget);
+      case IconResourceType.file:
+        return _buildFileIcon(iconResource, size, color, fallbackWidget);
+      case IconResourceType.network:
+        return _buildNetworkIcon(iconResource, size, color, fallbackWidget);
+      default:
+        return fallbackWidget;
+    }
   }
 
-  // 将图标处理逻辑提取到单独的方法中
-  static Image? _processIcon(int iconHandle) {
-    // 获取图标信息
-    final iconInfo = calloc<ICONINFO>();
-    final bmpColor = calloc<BITMAP>();
-    Pointer<Uint8>? lpBits;
-    Pointer<BITMAPINFOHEADER>? bi;
-    int? hdc;
-    try {
-      if (GetIconInfo(iconHandle, iconInfo) == 0) {
-        throw Exception('Failed to get icon info');
-      }
-      // 创建设备上下文
-      hdc = CreateCompatibleDC(NULL);
-      if (hdc == NULL) {
-        throw Exception('Failed to create DC');
-      }
-      // 选择位图对象
-      final oldBitmap = SelectObject(hdc, iconInfo.ref.hbmColor);
-      if (oldBitmap == NULL) {
-        throw Exception('Failed to select bitmap');
-      }
+  /// 构建预定义图标
+  Widget _buildPreDefinedIcon(
+    String iconResource,
+    double size,
+    Color? color,
+    Widget fallback,
+  ) {
+    final iconName = iconResource.substring(5); // 移除 "icon:" 前缀
+    final iconMap = _getPreDefinedIconMap();
 
-      // 获取位图信息
-      if (GetObject(iconInfo.ref.hbmColor, sizeOf<BITMAP>(), bmpColor) == 0) {
-        // SelectObject(hdc, oldBitmap);
-        // ReleaseDC(NULL, hdc);
-        throw Exception('Failed to get bitmap info');
-      }
+    final iconData = iconMap[iconName];
+    if (iconData != null) {
+      return Icon(iconData, size: size, color: color);
+    }
+    return fallback;
+  }
 
-      final width = bmpColor.ref.bmWidth;
-      final height = bmpColor.ref.bmHeight;
+  /// 构建Emoji图标
+  Widget _buildEmojiIcon(
+    String iconResource,
+    double size,
+    Color? color,
+    Widget fallback,
+  ) {
+    final emoji = iconResource.substring(6); // 移除 "emoji:" 前缀
+    if (emoji.isNotEmpty) {
+      return Text(emoji, style: TextStyle(fontSize: size, color: color));
+    }
+    return fallback;
+  }
 
-      // 创建 BITMAPINFO 结构体
-      bi = calloc<BITMAPINFOHEADER>();
-      bi.ref.biSize = sizeOf<BITMAPINFOHEADER>();
-      bi.ref.biWidth = width;
-      bi.ref.biHeight = -height; // 负值表示从上到下的扫描行
-      bi.ref.biPlanes = 1;
-      bi.ref.biBitCount = 32;
-      bi.ref.biCompression = BI_RGB;
+  /// 构建自定义图标
+  Widget _buildCustomIcon(
+    String iconResource,
+    double size,
+    Color? color,
+    Widget fallback,
+  ) {
+    final idStr = iconResource.substring(7); // 移除 "custom:" 前缀
+    final id = int.tryParse(idStr);
 
-      // 分配像素数据缓冲区
-      lpBits = calloc<Uint8>(width * height * 4);
-
-      // 获取位图数据
-      if (GetDIBits(
-            hdc,
-            iconInfo.ref.hbmColor,
-            0,
-            height,
-            lpBits.cast(),
-            bi.cast(),
-            DIB_RGB_COLORS,
-          ) ==
-          0) {
-        throw Exception('Failed to get bitmap bits');
-      }
-
-      // 获取位图数据
-      final pixels = Uint8List(width * height * 4);
-      final srcPixels = lpBits.asTypedList(width * height * 4);
-      if (width == 256 && height == 256) {
-        // 分析图标的实际内容区域
-        int contentLeft = width;
-        int contentRight = 0;
-        int contentTop = height;
-        int contentBottom = 0;
-
-        for (var y = 0; y < height; y++) {
-          for (var x = 0; x < width; x++) {
-            final i = (y * width + x) * 4;
-            // 检查像素是否不透明（alpha > 0）
-            if (srcPixels[i + 3] > 0) {
-              contentLeft = min(contentLeft, x);
-              contentRight = max(contentRight, x);
-              contentTop = min(contentTop, y);
-              contentBottom = max(contentBottom, y);
-            }
+    if (id != null) {
+      return FutureBuilder<CustomIcon?>(
+        future: DatabaseService().getCustomIconById(id),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!.imageData,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => fallback,
+            );
           }
+          return fallback;
+        },
+      );
+    }
+    return fallback;
+  }
+
+  /// 构建文件图标
+  Widget _buildFileIcon(
+    String iconResource,
+    double size,
+    Color? color,
+    Widget fallback,
+  ) {
+    final filePath = iconResource.substring(5); // 移除 "file:" 前缀
+    final file = File(filePath);
+
+    if (file.existsSync()) {
+      return Image.file(
+        file,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => fallback,
+      );
+    }
+    return fallback;
+  }
+
+/// 构建网络图标
+  Widget _buildNetworkIcon(
+    String iconResource,
+    double size,
+    Color? color,
+    Widget fallback,
+  ) {
+    final url = iconResource.substring(8); // 移除 "network:" 前缀
+
+    return Image.network(
+      url,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => fallback,
+    );
+  }
+
+  /// 验证图标资源是否有效
+  ///
+  /// [iconResource] 图标资源字符串
+  /// 返回true表示资源有效，false表示无效
+  Future<bool> isIconResourceValid(String? iconResource) async {
+    if (iconResource == null || iconResource.isEmpty) {
+      return false;
+    }
+
+    final type = getIconResourceType(iconResource);
+
+    switch (type) {
+      case IconResourceType.icon:
+        final iconName = iconResource.substring(5);
+        return _getPreDefinedIconMap().containsKey(iconName);
+      case IconResourceType.emoji:
+        final emoji = iconResource.substring(6);
+        return emoji.isNotEmpty;
+      case IconResourceType.file:
+        final filePath = iconResource.substring(5);
+        return File(filePath).existsSync();
+      case IconResourceType.customIcon:
+        final idStr = iconResource.substring(7);
+        final id = int.tryParse(idStr);
+        if (id != null) {
+          final customIcon = await DatabaseService().getCustomIconById(id);
+          return customIcon != null;
         }
+        return false;
 
-        // 计算实际内容区域的大小
-        final contentWidth = contentRight - contentLeft + 1;
-        final contentHeight = contentBottom - contentTop + 1;
+      case IconResourceType.network:
+        final url = iconResource.substring(8);
+        return Uri.tryParse(url) != null;
+      default:
+        return false;
+    }
+  }
 
-        // 如果实际内容区域明显小于 256x256，说明是小图标被放在大画布中
-        if (contentWidth <= 48 && contentHeight <= 48) {
+  /// 获取图标资源类型
+  ///
+  /// [iconResource] 图标资源字符串
+  /// 返回对应的IconResourceType枚举值
+  IconResourceType getIconResourceType(String? iconResource) {
+    if (iconResource == null || iconResource.isEmpty) {
+      return IconResourceType.unknown;
+    }
+
+    if (iconResource.startsWith('icon:')) {
+      return IconResourceType.icon;
+    } else if (iconResource.startsWith('emoji:')) {
+      return IconResourceType.emoji;
+    } else if (iconResource.startsWith('file:')) {
+      return IconResourceType.file;
+    } else if (iconResource.startsWith('custom:')) {
+      return IconResourceType.customIcon;
+    } else if (iconResource.startsWith('network:')) {
+      return IconResourceType.network;
+    }
+
+    return IconResourceType.unknown;
+  }
+
+  /// 获取预定义图标映射表
+  Map<String, IconData> _getPreDefinedIconMap() {
+    return {
+      'folder': Icons.folder,
+      'file': Icons.insert_drive_file,
+      'app': Icons.apps,
+      'settings': Icons.settings,
+      'home': Icons.home,
+      'search': Icons.search,
+      'favorite': Icons.favorite,
+      'star': Icons.star,
+      'play': Icons.play_arrow,
+      'pause': Icons.pause,
+      'stop': Icons.stop,
+      'refresh': Icons.refresh,
+      'delete': Icons.delete,
+      'edit': Icons.edit,
+      'add': Icons.add,
+      'remove': Icons.remove,
+      'close': Icons.close,
+      'check': Icons.check,
+      'arrow_back': Icons.arrow_back,
+      'arrow_forward': Icons.arrow_forward,
+      'arrow_up': Icons.arrow_upward,
+      'arrow_down': Icons.arrow_downward,
+    };
+  }
+
+  /// 获取所有可用的图标
+  ///
+  /// 返回包含预定义图标、emoji和自定义图标的列表
+  Future<Map<String, List<String>>> getAllAvailableIcons() async {
+    final result = <String, List<String>>{};
+
+    // 预定义图标
+    result['predefined'] = _predefinedIconsMap.values.toList();
+
+    // 常用emoji
+    result['emoji'] = _commonEmojisMap.values.toList();
+
+    // 自定义图标
+    final customIcons = await DatabaseService().getCustomIcons();
+    result['custom'] = customIcons.map((icon) => 'custom:${icon.id}').toList();
+
+    return result;
+  }
+
+  /// 上传自定义图标
+  ///
+  /// [name] 图标名称
+  /// [filePath] 可选的文件路径
+  /// 返回创建的CustomIcon对象，失败时返回null
+  Future<CustomIcon?> uploadCustomIcon({
+    required String name,
+    String? filePath,
+  }) async {
+    try {
+      // 如果没有提供文件路径，使用文件选择器
+      String? selectedFilePath = filePath;
+      if (selectedFilePath == null) {
+        FilePickerResult? result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+
+        if (result != null && result.files.single.path != null) {
+          selectedFilePath = result.files.single.path!;
+        } else {
           return null;
         }
       }
 
-      // 转换 BGRA 到 RGBA
-      for (var i = 0; i < srcPixels.length; i += 4) {
-        pixels[i] = srcPixels[i + 2]; // R = B
-        pixels[i + 1] = srcPixels[i + 1]; // G = G
-        pixels[i + 2] = srcPixels[i]; // B = R
-        pixels[i + 3] = srcPixels[i + 3]; // A = A
+      final file = File(selectedFilePath);
+      if (!file.existsSync()) {
+        return null;
       }
 
-      // 创建 Flutter 图像
-      var raw = RawImageData(
-        pixels,
-        width,
-        height,
-        pixelFormat: PixelFormat.rgba8888,
+      // 检查文件格式
+      if (!isSupportedImageFormat(selectedFilePath)) {
+        return null;
+      }
+
+      // 检查名称是否已存在
+      if (await DatabaseService().isCustomIconNameExists(name)) {
+        return null;
+      }
+
+      // 读取文件数据
+      final imageData = await file.readAsBytes();
+      final fileSize = imageData.length;
+
+      // 获取MIME类型
+      String mimeType = 'image/png';
+      final extension = selectedFilePath.split('.').last.toLowerCase();
+      switch (extension) {
+        case 'jpg':
+        case 'jpeg':
+          mimeType = 'image/jpeg';
+          break;
+        case 'png':
+          mimeType = 'image/png';
+          break;
+        case 'gif':
+          mimeType = 'image/gif';
+          break;
+        case 'webp':
+          mimeType = 'image/webp';
+          break;
+      }
+
+      // 创建CustomIcon对象
+      final customIcon = CustomIcon(
+        name: name,
+        originalPath: selectedFilePath,
+        imageData: imageData,
+        mimeType: mimeType,
+        fileSize: fileSize,
+        createdAt: DateTime.now(),
       );
 
-      return Image(image: RawImageProvider(raw));
+      // 保存到数据库
+      final id = await DatabaseService().insertCustomIcon(customIcon);
+
+      // 返回带有ID的CustomIcon对象
+      return CustomIcon(
+        id: id,
+        name: name,
+        originalPath: selectedFilePath,
+        imageData: imageData,
+        mimeType: mimeType,
+        fileSize: fileSize,
+        createdAt: customIcon.createdAt,
+      );
     } catch (e) {
-      LogService.error('Error processing icon', e);
       return null;
-    } finally {
-      // 清理所有资源
-      if (lpBits != null) free(lpBits);
-      if (bi != null) free(bi);
-      free(bmpColor);
-      if (iconInfo.ref.hbmColor != NULL) DeleteObject(iconInfo.ref.hbmColor);
-      if (iconInfo.ref.hbmMask != NULL) DeleteObject(iconInfo.ref.hbmMask);
-      if (hdc != NULL) DeleteDC(hdc!);
-      free(iconInfo);
-      DestroyIcon(iconHandle);
     }
   }
 
-  // 添加清除缓存的方法
-  static void clearCache() {
-    _iconCache.clear();
+  /// 删除自定义图标
+  ///
+  /// [id] 自定义图标ID
+  /// 返回true表示删除成功，false表示失败
+  Future<bool> deleteCustomIcon(int id) async {
+    try {
+      final result = await DatabaseService().deleteCustomIcon(id);
+      return result > 0;
+    } catch (e) {
+      return false;
+    }
   }
+
+  /// 获取所有自定义图标
+  Future<List<CustomIcon>> getCustomIcons() async {
+    return await DatabaseService().getCustomIcons();
+  }
+
+  /// 检查文件是否为支持的图片格式
+  ///
+  /// [fileName] 文件名
+  /// 返回true表示支持，false表示不支持
+  bool isSupportedImageFormat(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    return getSupportedImageFormats().contains(extension);
+  }
+
+  /// 获取支持的图片格式列表
+  ///
+  /// 返回支持的文件扩展名列表
+  List<String> getSupportedImageFormats() {
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico'];
+  }
+
+
 }

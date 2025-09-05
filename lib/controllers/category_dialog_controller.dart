@@ -16,13 +16,14 @@ class CategoryDialogController {
   });
 
   /// 验证类别名称
-  String? validateCategoryName(String name, BuildContext context, List<Category> existingCategories) {
+  Future<String?> validateCategoryName(String name, BuildContext context) async {
     final trimmedName = name.trim();
     
     if (trimmedName.isEmpty) {
       return AppLocalizations.of(context)!.categoryNameCannotBeEmpty;
     }
     
+    final existingCategories = await _databaseService.getCategories();
     final existingNames = existingCategories.map((c) => c.name).toList();
     if (existingNames.contains(trimmedName)) {
       return AppLocalizations.of(context)!.categoryNameAlreadyExists;
@@ -36,12 +37,11 @@ class CategoryDialogController {
     required String name,
     required String iconResource,
     required BuildContext context,
-    required List<Category> existingCategories,
     VoidCallback? onCategoryAdded,
   }) async {
     try {
       // 验证名称
-      final validationError = validateCategoryName(name, context, existingCategories);
+      final validationError = await validateCategoryName(name, context);
       if (validationError != null) {
         onShowMessage?.call(validationError, color: Colors.red);
         return false;

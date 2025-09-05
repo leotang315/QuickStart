@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/program.dart';
 import '../models/category.dart';
 import '../models/program_with_category.dart';
+import '../models/custom_icon.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -22,7 +23,7 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'quick_start.db');
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _createDb,
       onUpgrade: _upgradeDb,
     );
@@ -51,6 +52,20 @@ class DatabaseService {
       )
     ''');
 
+    // 创建自定义图标表
+    await db.execute('''
+      CREATE TABLE custom_icons(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        original_path TEXT NOT NULL,
+        image_data BLOB NOT NULL,
+        mime_type TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER
+      )
+    ''');
+
     // 插入桌面类别，使用固定ID=0
     await db.execute('''
       INSERT INTO categories (id, name, iconResource) VALUES (0, '桌面', 'icon:desktop_windows')
@@ -58,7 +73,21 @@ class DatabaseService {
   }
 
   Future<void> _upgradeDb(Database db, int oldVersion, int newVersion) async {
-    
+    // 从版本5升级到版本6：添加自定义图标表
+    if (oldVersion < 6) {
+      await db.execute('''
+        CREATE TABLE custom_icons(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          original_path TEXT NOT NULL,
+          image_data BLOB NOT NULL,
+          mime_type TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER
+        )
+      ''');
+    }
   }
 
   Future<int> insertProgram(Program program) async {
@@ -221,6 +250,105 @@ class DatabaseService {
       return Category.fromMap(maps.first);
     }
     return null;
+  }
+
+  // Custom Icon operations
+  /// 插入自定义图标
+  Future<int> insertCustomIcon(CustomIcon customIcon) async {
+    final db = await database;
+    return await db.insert('custom_icons', customIcon.toMap());
+  }
+
+  /// 删除自定义图标
+  Future<int> deleteCustomIcon(int id) async {
+    final db = await database;
+    return await db.delete('custom_icons', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// 更新自定义图标
+  Future<int> updateCustomIcon(CustomIcon customIcon) async {
+    final db = await database;
+    final updateData = customIcon.toMap();
+    updateData['updated_at'] = DateTime.now().millisecondsSinceEpoch;
+    return await db.update(
+      'custom_icons',
+      updateData,
+      where: 'id = ?',
+      whereArgs: [customIcon.id],
+    );
+  }
+
+  /// 获取所有自定义图标
+  Future<List<CustomIcon>> getCustomIcons() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'custom_icons',
+      orderBy: 'created_at DESC',
+    );
+    return List.generate(maps.length, (i) => CustomIcon.fromMap(maps[i]));
+  }
+
+  /// 根据ID获取自定义图标
+  Future<CustomIcon?> getCustomIconById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'custom_icons',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return CustomIcon.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  /// 根据名称获取自定义图标
+  Future<CustomIcon?> getCustomIconByName(String name) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'custom_icons',
+      where: 'name = ?',
+      whereArgs: [name],
+    );
+
+    if (maps.isNotEmpty) {
+      return CustomIcon.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  /// 检查自定义图标名称是否已存在
+  Future<bool> isCustomIconNameExists(String name, {int? excludeId}) async {
+    final db = await database;
+    String whereClause = 'name = ?';
+    List<dynamic> whereArgs = [name];
+    
+    if (excludeId != null) {
+      whereClause += ' AND id != ?';
+      whereArgs.add(excludeId);
+    }
+    
+    final List<Map<String, dynamic>> maps = await db.query(
+      'custom_icons',
+      where: whereClause,
+      whereArgs: whereArgs,
+    );
+    
+    return maps.isNotEmpty;
+  }
+
+  /// 获取自定义图标总数
+  Future<int> getCustomIconCount() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM custom_icons');
+    return result.first['count'] as int;
+  }
+
+  /// 清理所有自定义图标
+  Future<int> clearAllCustomIcons() async {
+    final db = await database;
+    return await db.delete('custom_icons');
   }
 
 }

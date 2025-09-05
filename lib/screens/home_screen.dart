@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:logger/web.dart';
 import '../models/program.dart';
 import '../models/category.dart';
 import '../services/database_service.dart';
@@ -419,13 +420,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showAddCategoryDialog() {
     showDialog(
       context: context,
+
       barrierColor: Colors.black.withOpacity(0.3),
       builder: (context) => AddCategoryDialog(
         existingCategories: _categories,
         onCategoryAdded: _loadProgramsAndCategories,
-        onShowMessage: _showMessage,
       ),
     );
+print("abc");
   }
 
   void _showAnimatedOverlay() {
