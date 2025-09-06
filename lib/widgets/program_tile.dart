@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/program.dart';
 import '../services/file_icon_service.dart';
+import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/database_service.dart';
 
@@ -207,7 +208,10 @@ class _ProgramTileState extends State<ProgramTile> {
                 SizedBox(
                   width: 16,
                   height: 16,
-                  child: category.getIcon(size: 16),
+                  child: IconService.instance.getIconWidget(
+                    category.iconResource,
+                    size: 16,
+                  ),
                 ),
                 SizedBox(width: 8),
                 Expanded(
@@ -322,9 +326,12 @@ class _ProgramTileState extends State<ProgramTile> {
       // 显示成功提示
       _showMessage(
         newCategory != null
-            ? AppLocalizations.of(context)!.programMovedToCategory(widget.program.name, newCategory)
-            : AppLocalizations.of(context)!.programRemovedFromCategory(widget.program.name),
-
+            ? AppLocalizations.of(
+              context,
+            )!.programMovedToCategory(widget.program.name, newCategory)
+            : AppLocalizations.of(
+              context,
+            )!.programRemovedFromCategory(widget.program.name),
       );
 
       // 通知父组件刷新

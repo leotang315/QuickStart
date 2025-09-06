@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../models/category.dart';
+import '../services/icon_service.dart';
 
 /// 多功能图标选择器
 /// 支持Emoji、Icons和自定义上传图标
 class MultiIconSelector extends StatefulWidget {
   final String selectedIconResource;
-  final Function(String iconResource, IconData? icon, String? imagePath) onIconSelected;
+  final Function(String iconResource) onIconSelected;
   final double height;
 
   const MultiIconSelector({
@@ -23,56 +24,27 @@ class MultiIconSelector extends StatefulWidget {
 class _MultiIconSelectorState extends State<MultiIconSelector>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late Future<Map<String, List<String>>> _availableIcons;
 
-
-  // Emoji数据
-  final List<String> _emojiCategories = [ '表情', '人物', '动物', '食物', '活动', '旅行', '物品', '符号'];
-  final Map<String, List<String>> _emojiData = {
-    '表情': [
-      '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
-      '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
-      '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩',
-      '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣',
-      '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬'
-    ],
-    '人物': [
-      '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔', '👩', '🧓',
-      '👴', '👵', '🙍', '🙎', '🙅', '🙆', '💁', '🙋', '🧏', '🙇',
-      '🤦', '🤷', '👮', '🕵️', '💂', '👷', '🤴', '👸', '👳', '👲'
-    ],
-    '动物': [
-      '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯',
-      '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒',
-      '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇'
-    ],
-    '食物': [
-      '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈',
-      '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦',
-      '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔'
-    ],
-    '活动': [
-      '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱',
-      '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳'
-    ],
-    '旅行': [
-      '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐',
-      '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵', '🚲', '🛴', '🛹', '🛼'
-    ],
-    '物品': [
-      '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🖲️', '🕹️',
-      '🗜️', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥'
-    ],
-    '符号': [
-      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
-      '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️'
-    ],
-  };
+  // 从 IconService 获取的 emoji 数据
+  List<String> _emojiList = [];
+  List<String> _iconList = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _availableIcons = IconService.instance.getAllAvailableIcons();
+    _loadEmojiData();
+  }
 
+  /// 从 IconService 加载 emoji 数据
+  void _loadEmojiData() async {
+    final icons = await _availableIcons;
+    setState(() {
+      _emojiList = icons['emoji'] ?? [];
+      _iconList = icons['icon'] ?? [];
+    });
   }
 
   @override
@@ -95,10 +67,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildEmojiTab(),
-                _buildIconsTab(),
-              ],
+              children: [_buildEmojiTab(), _buildIconsTab()],
             ),
           ),
         ],
@@ -122,14 +91,8 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
         unselectedLabelColor: Color(0xFF6C757D),
         indicatorColor: Color(0xFF0078D4),
         indicatorWeight: 2,
-        labelStyle: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
-        tabs: [
-          Tab(text: 'Emoji'),
-          Tab(text: 'Icons'),
-        ],
+        labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+        tabs: [Tab(text: 'Emoji'), Tab(text: 'Icons')],
       ),
     );
   }
@@ -138,31 +101,6 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
   Widget _buildEmojiTab() {
     return Column(
       children: [
-        // Emoji分类标签
-        Container(
-          height: 40,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _emojiCategories.length,
-            itemBuilder: (context, index) {
-              final category = _emojiCategories[index];
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: FilterChip(
-                  label: Text(
-                    category,
-                    style: TextStyle(fontSize: 12),
-                  ),
-                  selected: false,
-                  onSelected: (selected) {
-                    // TODO: 实现分类切换
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-        // Emoji网格
         Expanded(
           child: GridView.builder(
             padding: EdgeInsets.all(8),
@@ -172,33 +110,32 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
               mainAxisSpacing: 4,
               childAspectRatio: 1,
             ),
-            itemCount: _emojiData['表情']!.length,
+            itemCount: _emojiList.length,
             itemBuilder: (context, index) {
-              final emoji = _emojiData['表情']![index];
-              final isSelected = widget.selectedIconResource == 'emoji:$emoji';
-              
+              final emojiResource = _emojiList[index];
+              final emoji = IconService.instance.getIconWidget(
+                emojiResource,
+                size: 20,
+              );
+              final isSelected = widget.selectedIconResource == emojiResource;
+
               return GestureDetector(
                 onTap: () {
-                  widget.onIconSelected('emoji:$emoji', null, null);
+                  widget.onIconSelected(emojiResource);
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Color(0xFF0078D4).withOpacity(0.1)
-                        : Colors.transparent,
+                    color:
+                        isSelected
+                            ? Color(0xFF0078D4).withOpacity(0.1)
+                            : Colors.transparent,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: isSelected
-                          ? Color(0xFF0078D4)
-                          : Colors.transparent,
+                      color:
+                          isSelected ? Color(0xFF0078D4) : Colors.transparent,
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      emoji,
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  ),
+                  child: Center(child: emoji),
                 ),
               );
             },
@@ -218,46 +155,32 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
         mainAxisSpacing: 4,
         childAspectRatio: 1,
       ),
-      itemCount: Category.flutterIcons.length,
+      itemCount: _iconList.length,
+
       itemBuilder: (context, index) {
-        final entry = Category.flutterIcons.entries.elementAt(index);
-        final iconKey = entry.key;
-        final iconData = entry.value;
-        final iconResource = 'icon:$iconKey';
+        final iconResource = _iconList[index];
+        final icon = IconService.instance.getIconWidget(iconResource, size: 20);
         final isSelected = widget.selectedIconResource == iconResource;
 
         return GestureDetector(
           onTap: () {
-            widget.onIconSelected(iconResource, iconData, null);
+            widget.onIconSelected(iconResource);
           },
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected
-                  ? Color(0xFF0078D4).withOpacity(0.1)
-                  : Colors.transparent,
+              color:
+                  isSelected
+                      ? Color(0xFF0078D4).withOpacity(0.1)
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isSelected
-                    ? Color(0xFF0078D4)
-                    : Colors.transparent,
+                color: isSelected ? Color(0xFF0078D4) : Colors.transparent,
               ),
             ),
-            child: Icon(
-              iconData,
-              size: 16,
-              color: isSelected
-                  ? Color(0xFF0078D4)
-                  : Color(0xFF6C757D),
-            ),
+            child: Center(child: icon),
           ),
         );
       },
     );
   }
-
-
-
-
-
-
 }

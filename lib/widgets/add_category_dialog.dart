@@ -4,9 +4,6 @@ import '../controllers/category_dialog_controller.dart';
 import '../widgets/multi_icon_selector.dart';
 import '../services/icon_service.dart';
 
-
-/// 添加类别对话框组件
-/// 独立的对话框 Widget，用于添加新的类别
 class AddCategoryDialog extends StatefulWidget {
   final VoidCallback onCategoryAdded;
 
@@ -20,7 +17,7 @@ class AddCategoryDialog extends StatefulWidget {
 class _AddCategoryDialogState extends State<AddCategoryDialog> {
   late TextEditingController _categoryNameController;
   late CategoryDialogController _categoryDialogController;
-  late String _selectedIconResource="";
+  late String _selectedIconResource = "";
   bool _isLoading = false;
 
   @override
@@ -61,7 +58,6 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
     );
   }
 
- 
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
@@ -175,7 +171,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
         SizedBox(height: 12),
         MultiIconSelector(
           selectedIconResource: _selectedIconResource,
-          onIconSelected: (iconResource, icon, imagePath) {
+          onIconSelected: (iconResource) {
             setState(() {
               _selectedIconResource = iconResource;
             });
@@ -283,5 +279,4 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
       color: Color(0xFF0078D4),
     );
   }
-
 }

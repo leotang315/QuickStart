@@ -4,6 +4,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:logger/web.dart';
+import 'package:quick_start/services/icon_service.dart';
 import '../models/program.dart';
 import '../models/category.dart';
 import '../services/database_service.dart';
@@ -422,12 +423,10 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
 
       barrierColor: Colors.black.withOpacity(0.3),
-      builder: (context) => AddCategoryDialog(
-        existingCategories: _categories,
-        onCategoryAdded: _loadProgramsAndCategories,
-      ),
+      builder:
+          (context) =>
+              AddCategoryDialog(onCategoryAdded: _loadProgramsAndCategories),
     );
-print("abc");
   }
 
   void _showAnimatedOverlay() {
@@ -871,7 +870,9 @@ print("abc");
                     width: 30,
                     height: 30,
                     alignment: Alignment.center,
-                    child: category.getIcon(),
+                    child: IconService.instance.getIconWidget(
+                      category.iconResource,
+                    ),
                   ),
                   Flexible(
                     child: AnimatedOpacity(

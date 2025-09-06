@@ -27,111 +27,57 @@ class IconService {
   static const IconData _defaultFallbackIcon = Icons.help_outline;
 
   /// 预定义图标列表
-  static const Map<String, String> _predefinedIconsMap = {
-    'home': 'icon:home',
-    'settings': 'icon:settings',
-    'search': 'icon:search',
-    'favorite': 'icon:favorite',
-    'star': 'icon:star',
-    'folder': 'icon:folder',
-    'file': 'icon:file',
-    'edit': 'icon:edit',
-    'delete': 'icon:delete',
-    'add': 'icon:add',
-    'remove': 'icon:remove',
-    'save': 'icon:save',
-    'download': 'icon:download',
-    'upload': 'icon:upload',
-    'share': 'icon:share',
-    'copy': 'icon:copy',
-    'cut': 'icon:cut',
-    'paste': 'icon:paste',
-    'undo': 'icon:undo',
-    'redo': 'icon:redo',
+  static const Map<String, IconData> _predefinedIconsMap = {
+    'icon:home': Icons.home,
+    'icon:settings': Icons.settings,
+    'icon:search': Icons.search,
+    'icon:favorite': Icons.favorite,
+    'icon:star': Icons.star,
+    'icon:folder': Icons.folder,
+    'icon:file': Icons.insert_drive_file,
+    'icon:edit': Icons.edit,
+    'icon:delete': Icons.delete,
+    'icon:add': Icons.add,
+    'icon:remove': Icons.remove,
+    'icon:save': Icons.save,
+    'icon:download': Icons.download,
+    'icon:upload': Icons.upload,
+    'icon:share': Icons.share,
+    'icon:copy': Icons.copy,
+    'icon:cut': Icons.content_cut,
+    'icon:paste': Icons.content_paste,
+    'icon:undo': Icons.undo,
+    'icon:redo': Icons.redo,
   };
 
   /// 常用emoji列表
   static const Map<String, String> _commonEmojisMap = {
-    '😀': 'emoji:😀',
-    '😃': 'emoji:😃',
-    '😄': 'emoji:😄',
-    '😁': 'emoji:😁',
-    '😆': 'emoji:😆',
-    '😅': 'emoji:😅',
-    '😂': 'emoji:😂',
-    '🤣': 'emoji:🤣',
-    '😊': 'emoji:😊',
-    '😇': 'emoji:😇',
-    '🙂': 'emoji:🙂',
-    '🙃': 'emoji:🙃',
-    '😉': 'emoji:😉',
-    '😌': 'emoji:😌',
-    '😍': 'emoji:😍',
-    '🥰': 'emoji:🥰',
-    '😘': 'emoji:😘',
-    '😗': 'emoji:😗',
-    '😙': 'emoji:😙',
-    '😚': 'emoji:😚',
-    '😋': 'emoji:😋',
-    '😛': 'emoji:😛',
-    '😝': 'emoji:😝',
-    '😜': 'emoji:😜',
-    '🤪': 'emoji:🤪',
-    '🤨': 'emoji:🤨',
-    '🧐': 'emoji:🧐',
-    '🤓': 'emoji:🤓',
-    '😎': 'emoji:😎',
-    '🤩': 'emoji:🤩',
-    '🥳': 'emoji:🥳',
-    '😏': 'emoji:😏',
-    '⭐': 'emoji:⭐',
-    '🌟': 'emoji:🌟',
-    '💫': 'emoji:💫',
-    '✨': 'emoji:✨',
-    '🔥': 'emoji:🔥',
-    '💯': 'emoji:💯',
-    '💢': 'emoji:💢',
-    '💥': 'emoji:💥',
-    '💦': 'emoji:💦',
-    '💨': 'emoji:💨',
-    '🕳️': 'emoji:🕳️',
-    '💣': 'emoji:💣',
-    '💬': 'emoji:💬',
-    '👁️‍🗨️': 'emoji:👁️‍🗨️',
-    '🗨️': 'emoji:🗨️',
-    '🗯️': 'emoji:🗯️',
-    '💭': 'emoji:💭',
-    '💤': 'emoji:💤',
-    '👋': 'emoji:👋',
-    '🤚': 'emoji:🤚',
-    '🖐️': 'emoji:🖐️',
-    '✋': 'emoji:✋',
-    '🖖': 'emoji:🖖',
-    '👌': 'emoji:👌',
-    '🤏': 'emoji:🤏',
-    '✌️': 'emoji:✌️',
-    '🤞': 'emoji:🤞',
-    '🤟': 'emoji:🤟',
-    '🤘': 'emoji:🤘',
-    '🤙': 'emoji:🤙',
-    '👈': 'emoji:👈',
-    '👉': 'emoji:👉',
-    '👆': 'emoji:👆',
-    '🖕': 'emoji:🖕',
-    '👇': 'emoji:👇',
-    '☝️': 'emoji:☝️',
-    '👍': 'emoji:👍',
-    '👎': 'emoji:👎',
-    '✊': 'emoji:✊',
-    '👊': 'emoji:👊',
-    '🤛': 'emoji:🤛',
-    '🤜': 'emoji:🤜',
-    '👏': 'emoji:👏',
-    '🙌': 'emoji:🙌',
-    '👐': 'emoji:👐',
-    '🤲': 'emoji:🤲',
-    '🤝': 'emoji:🤝',
-    '🙏': 'emoji:🙏',
+    'emoji:😀': '😀',
+    'emoji:😃': '😃',
+    'emoji:😄': '😄',
+    'emoji:😁': '😁',
+    'emoji:😆': '😆',
+    'emoji:😅': '😅',
+    'emoji:😂': '😂',
+    'emoji:🤣': '🤣',
+    'emoji:😊': '😊',
+    'emoji:😇': '😇',
+    'emoji:🙂': '🙂',
+    'emoji:🙃': '🙃',
+    'emoji:😉': '😉',
+    'emoji:😌': '😌',
+    'emoji:😍': '😍',
+    'emoji:🥰': '🥰',
+    'emoji:😘': '😘',
+    'emoji:😗': '😗',
+    'emoji:😙': '😙',
+    'emoji:😚': '😚',
+    'emoji:😋': '😋',
+    'emoji:😛': '😛',
+    'emoji:😝': '😝',
+    'emoji:😜': '😜',
+    'emoji:🤪': '🤪',
+    'emoji:🤨': '🤨',
   };
 
   /// 根据iconResource参数获取对应的Widget
@@ -189,10 +135,7 @@ class IconService {
     Color? color,
     Widget fallback,
   ) {
-    final iconName = iconResource.substring(5); // 移除 "icon:" 前缀
-    final iconMap = _getPreDefinedIconMap();
-
-    final iconData = iconMap[iconName];
+    final iconData = _predefinedIconsMap[iconResource];
     if (iconData != null) {
       return Icon(iconData, size: size, color: color);
     }
@@ -206,8 +149,8 @@ class IconService {
     Color? color,
     Widget fallback,
   ) {
-    final emoji = iconResource.substring(6); // 移除 "emoji:" 前缀
-    if (emoji.isNotEmpty) {
+    final emoji = _commonEmojisMap[iconResource];
+    if (emoji != null) {
       return Text(emoji, style: TextStyle(fontSize: size, color: color));
     }
     return fallback;
@@ -265,7 +208,7 @@ class IconService {
     return fallback;
   }
 
-/// 构建网络图标
+  /// 构建网络图标
   Widget _buildNetworkIcon(
     String iconResource,
     double size,
@@ -281,44 +224,6 @@ class IconService {
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) => fallback,
     );
-  }
-
-  /// 验证图标资源是否有效
-  ///
-  /// [iconResource] 图标资源字符串
-  /// 返回true表示资源有效，false表示无效
-  Future<bool> isIconResourceValid(String? iconResource) async {
-    if (iconResource == null || iconResource.isEmpty) {
-      return false;
-    }
-
-    final type = getIconResourceType(iconResource);
-
-    switch (type) {
-      case IconResourceType.icon:
-        final iconName = iconResource.substring(5);
-        return _getPreDefinedIconMap().containsKey(iconName);
-      case IconResourceType.emoji:
-        final emoji = iconResource.substring(6);
-        return emoji.isNotEmpty;
-      case IconResourceType.file:
-        final filePath = iconResource.substring(5);
-        return File(filePath).existsSync();
-      case IconResourceType.customIcon:
-        final idStr = iconResource.substring(7);
-        final id = int.tryParse(idStr);
-        if (id != null) {
-          final customIcon = await DatabaseService().getCustomIconById(id);
-          return customIcon != null;
-        }
-        return false;
-
-      case IconResourceType.network:
-        final url = iconResource.substring(8);
-        return Uri.tryParse(url) != null;
-      default:
-        return false;
-    }
   }
 
   /// 获取图标资源类型
@@ -345,34 +250,6 @@ class IconService {
     return IconResourceType.unknown;
   }
 
-  /// 获取预定义图标映射表
-  Map<String, IconData> _getPreDefinedIconMap() {
-    return {
-      'folder': Icons.folder,
-      'file': Icons.insert_drive_file,
-      'app': Icons.apps,
-      'settings': Icons.settings,
-      'home': Icons.home,
-      'search': Icons.search,
-      'favorite': Icons.favorite,
-      'star': Icons.star,
-      'play': Icons.play_arrow,
-      'pause': Icons.pause,
-      'stop': Icons.stop,
-      'refresh': Icons.refresh,
-      'delete': Icons.delete,
-      'edit': Icons.edit,
-      'add': Icons.add,
-      'remove': Icons.remove,
-      'close': Icons.close,
-      'check': Icons.check,
-      'arrow_back': Icons.arrow_back,
-      'arrow_forward': Icons.arrow_forward,
-      'arrow_up': Icons.arrow_upward,
-      'arrow_down': Icons.arrow_downward,
-    };
-  }
-
   /// 获取所有可用的图标
   ///
   /// 返回包含预定义图标、emoji和自定义图标的列表
@@ -380,10 +257,10 @@ class IconService {
     final result = <String, List<String>>{};
 
     // 预定义图标
-    result['predefined'] = _predefinedIconsMap.values.toList();
+    result['icon'] = _predefinedIconsMap.keys.toList();
 
     // 常用emoji
-    result['emoji'] = _commonEmojisMap.values.toList();
+    result['emoji'] = _commonEmojisMap.keys.toList();
 
     // 自定义图标
     final customIcons = await DatabaseService().getCustomIcons();
@@ -516,6 +393,4 @@ class IconService {
   List<String> getSupportedImageFormats() {
     return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico'];
   }
-
-
 }

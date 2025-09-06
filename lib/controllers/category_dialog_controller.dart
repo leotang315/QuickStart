@@ -11,24 +11,25 @@ class CategoryDialogController {
   final DatabaseService _databaseService = DatabaseService();
   final MessageCallback? onShowMessage;
 
-  CategoryDialogController({
-    this.onShowMessage,
-  });
+  CategoryDialogController({this.onShowMessage});
 
   /// 验证类别名称
-  Future<String?> validateCategoryName(String name, BuildContext context) async {
+  Future<String?> validateCategoryName(
+    String name,
+    BuildContext context,
+  ) async {
     final trimmedName = name.trim();
-    
+
     if (trimmedName.isEmpty) {
       return AppLocalizations.of(context)!.categoryNameCannotBeEmpty;
     }
-    
+
     final existingCategories = await _databaseService.getCategories();
     final existingNames = existingCategories.map((c) => c.name).toList();
     if (existingNames.contains(trimmedName)) {
       return AppLocalizations.of(context)!.categoryNameAlreadyExists;
     }
-    
+
     return null;
   }
 
@@ -74,21 +75,5 @@ class CategoryDialogController {
       );
       return false;
     }
-  }
-
-  /// 获取默认图标资源
-  String getDefaultIconResource() {
-    if (Category.flutterIcons.isNotEmpty) {
-      return "icon:" + Category.flutterIcons.keys.first;
-    }
-    return "icon:category";
-  }
-
-  /// 获取默认图标
-  IconData getDefaultIcon() {
-    if (Category.flutterIcons.isNotEmpty) {
-      return Category.flutterIcons.values.first;
-    }
-    return Icons.category;
   }
 }
