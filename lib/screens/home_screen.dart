@@ -4,6 +4,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:logger/web.dart';
+import 'package:path/path.dart' as path;
 import 'package:quick_start/services/icon_service.dart';
 import '../models/program.dart';
 import '../models/category.dart';
@@ -134,7 +135,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // 如果当前选中的类别不存在或不可见，选择第一个可见类别或清空选择
       if (_selectedCategory != null &&
           !visibleCategories.any((c) => c.id == _selectedCategory!.id)) {
-        _selectedCategory = visibleCategories.isNotEmpty ? visibleCategories.first : null;
+        _selectedCategory =
+            visibleCategories.isNotEmpty ? visibleCategories.first : null;
       } else if (_selectedCategory == null && visibleCategories.isNotEmpty) {
         _selectedCategory = visibleCategories.first;
       }
@@ -269,22 +271,8 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
 
-      // 扫描桌面项目
-      final desktopItems = await _desktopScannerService.scanDesktopItems();
-
-      if (desktopItems.isEmpty) {
-        Navigator.pop(context);
-        _showMessage(
-          AppLocalizations.of(context)!.noDesktopItemsToOrganize,
-          color: Colors.orange,
-        );
-        return;
-      }
-
       // 快速备份桌面文件（直接移动，无需拷贝）
-      final backupInfo = await _desktopScannerService.fastBackupDesktopItems(
-        desktopItems,
-      );
+      final backupInfo = await _desktopScannerService.backupDesktop();
 
       // 获取桌面分类（固定ID=0）
       Category? desktopCategory = await _databaseService.getCategoryById(0);
@@ -295,9 +283,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 将桌面项目添加到程序列表
       for (final item in backupInfo.items) {
+        final name = path.basename(item.dstPath);
         final program = Program(
-          name: item.name,
-          path: item.backupPath,
+          name: name,
+          path: item.dstPath,
           categoryId: desktopCategory.id,
           frequency: 0,
         );
@@ -305,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
         try {
           await _databaseService.insertProgram(program);
         } catch (e) {
-          LogService.error('Failed to add program: ${item.name}', e);
+          LogService.error('Failed to add program: $name', e);
         }
       }
 
@@ -322,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _showMessage(
         AppLocalizations.of(
           context,
-        )!.desktopOrganizeSuccess(desktopItems.length),
+        )!.desktopOrganizeSuccess(backupInfo.items.length),
         color: Colors.green,
         duration: 3,
       );
@@ -391,14 +380,16 @@ class _HomeScreenState extends State<HomeScreen> {
               .getProgramsByCategoryId(desktopCategory.id);
 
           for (final item in backupInfo.items) {
+            final name = path.basename(item.dstPath);
+
             try {
               final program = desktopPrograms.firstWhere(
-                (p) => p.name == item.name,
+                (p) => p.name == name,
                 orElse: () => throw Exception('程序未找到'),
               );
               await _databaseService.deleteProgram(program.id!);
             } catch (e) {
-              LogService.error('Failed to delete program: ${item.name}', e);
+              LogService.error('Failed to delete program: $name', e);
             }
           }
           // 桌面类别保持永久存在，不删除
@@ -406,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // 快速恢复桌面文件（直接移动而非拷贝）
-      await _desktopScannerService.fastRestoreDesktopItems();
+      await _desktopScannerService.restoreDesktop();
 
       // 更新状态
       setState(() {
