@@ -23,10 +23,10 @@ class IconService {
 
   static IconService get instance => _instance;
 
-  /// 默认的fallback图标
   static const IconData _defaultFallbackIcon = Icons.help_outline;
 
-  /// 预定义图标列表
+  final Map<int, CustomIcon> _customIconCache = {};
+
   static const Map<String, IconData> _predefinedIconsMap = {
     'icon:home': Icons.home,
     'icon:settings': Icons.settings,
@@ -50,7 +50,6 @@ class IconService {
     'icon:redo': Icons.redo,
   };
 
-  /// 常用emoji列表
   static const Map<String, String> _commonEmojisMap = {
     'emoji:😀': '😀',
     'emoji:😃': '😃',
@@ -167,8 +166,9 @@ class IconService {
     final id = int.tryParse(idStr);
 
     if (id != null) {
+      // 如果缓存中没有，则从数据库加载并缓存
       return FutureBuilder<CustomIcon?>(
-        future: DatabaseService().getCustomIconById(id),
+        future: _getCustomIconWithCache(id),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
             return Image.memory(
@@ -184,6 +184,35 @@ class IconService {
       );
     }
     return fallback;
+  }
+
+  /// 带缓存的获取自定义图标方法
+  Future<CustomIcon?> _getCustomIconWithCache(int id) async {
+    // 如果缓存中已有，直接返回
+    if (_customIconCache.containsKey(id)) {
+      return _customIconCache[id];
+    }
+
+    try {
+      final customIcon = await DatabaseService().getCustomIconById(id);
+      if (customIcon != null) {
+        // 加载成功后立即缓存
+        _customIconCache[id] = customIcon;
+      }
+      return customIcon;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 清除自定义图标缓存
+  void clearCustomIconCache() {
+    _customIconCache.clear();
+  }
+
+  /// 从缓存中移除特定图标
+  void removeCustomIconFromCache(int id) {
+    _customIconCache.remove(id);
   }
 
   /// 构建文件图标
@@ -272,35 +301,20 @@ class IconService {
   /// 上传自定义图标
   ///
   /// [name] 图标名称
-  /// [filePath] 可选的文件路径
+  /// [filePath] 文件路径（必需）
   /// 返回创建的CustomIcon对象，失败时返回null
   Future<CustomIcon?> uploadCustomIcon({
     required String name,
-    String? filePath,
+    required String filePath,
   }) async {
     try {
-      // 如果没有提供文件路径，使用文件选择器
-      String? selectedFilePath = filePath;
-      if (selectedFilePath == null) {
-        FilePickerResult? result = await FilePicker.platform.pickFiles(
-          type: FileType.image,
-          allowMultiple: false,
-        );
-
-        if (result != null && result.files.single.path != null) {
-          selectedFilePath = result.files.single.path!;
-        } else {
-          return null;
-        }
-      }
-
-      final file = File(selectedFilePath);
+      final file = File(filePath);
       if (!file.existsSync()) {
         return null;
       }
 
       // 检查文件格式
-      if (!isSupportedImageFormat(selectedFilePath)) {
+      if (!isSupportedImageFormat(filePath)) {
         return null;
       }
 
@@ -315,7 +329,7 @@ class IconService {
 
       // 获取MIME类型
       String mimeType = 'image/png';
-      final extension = selectedFilePath.split('.').last.toLowerCase();
+      final extension = filePath.split('.').last.toLowerCase();
       switch (extension) {
         case 'jpg':
         case 'jpeg':
@@ -335,7 +349,7 @@ class IconService {
       // 创建CustomIcon对象
       final customIcon = CustomIcon(
         name: name,
-        originalPath: selectedFilePath,
+        originalPath: filePath,
         imageData: imageData,
         mimeType: mimeType,
         fileSize: fileSize,
@@ -346,15 +360,20 @@ class IconService {
       final id = await DatabaseService().insertCustomIcon(customIcon);
 
       // 返回带有ID的CustomIcon对象
-      return CustomIcon(
+      final newCustomIcon = CustomIcon(
         id: id,
         name: name,
-        originalPath: selectedFilePath,
+        originalPath: filePath,
         imageData: imageData,
         mimeType: mimeType,
         fileSize: fileSize,
         createdAt: customIcon.createdAt,
       );
+
+      // 添加到缓存
+      _customIconCache[id] = newCustomIcon;
+
+      return newCustomIcon;
     } catch (e) {
       return null;
     }
@@ -367,7 +386,12 @@ class IconService {
   Future<bool> deleteCustomIcon(int id) async {
     try {
       final result = await DatabaseService().deleteCustomIcon(id);
-      return result > 0;
+      if (result > 0) {
+        // 删除成功后从缓存中移除
+        removeCustomIconFromCache(id);
+        return true;
+      }
+      return false;
     } catch (e) {
       return false;
     }

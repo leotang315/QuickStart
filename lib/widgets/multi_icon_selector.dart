@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as path;
 
 import '../models/category.dart';
 import '../models/custom_icon.dart';
@@ -276,20 +277,20 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
   /// 构建上传标签页
   Widget _buildUploadTab() {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(8),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          minHeight: MediaQuery.of(context).size.height * 0.3,
+          //  minHeight: MediaQuery.of(context).size.height * 0.3,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.cloud_upload_outlined,
-              size: 48,
+              size: 20,
               color: Color(0xFF0078D4),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 8),
             Text(
               '上传自定义图标',
               style: TextStyle(
@@ -298,12 +299,12 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
                 color: Color(0xFF212529),
               ),
             ),
-            SizedBox(height: 6),
+            SizedBox(height: 8),
             Text(
               '支持 PNG、JPG、GIF、WebP 等格式',
               style: TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
             ),
-            SizedBox(height: 20),
+            SizedBox(height: 8),
             ElevatedButton.icon(
               onPressed: _isUploading ? null : _uploadCustomIcon,
               icon:
@@ -329,20 +330,6 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
                 ),
               ),
             ),
-            SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _isUploading ? null : _pasteFromClipboard,
-              icon: Icon(Icons.content_paste),
-              label: Text('从剪贴板粘贴'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Color(0xFF0078D4),
-                side: BorderSide(color: Color(0xFF0078D4)),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -356,15 +343,23 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
     });
 
     try {
-      // 显示名称输入对话框
-      final name = await _showNameInputDialog();
-      if (name == null || name.trim().isEmpty) {
+      // 先选择文件
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.single.path == null) {
+        // 用户取消了文件选择
         return;
       }
 
-      // 上传图标
+      final selectedFilePath = result.files.single.path!;
+
+      // 上传图标（传入文件路径）
       final customIcon = await IconService.instance.uploadCustomIcon(
-        name: name.trim(),
+        name: path.basename(selectedFilePath),
+        filePath: selectedFilePath,
       );
 
       if (customIcon != null) {
@@ -385,7 +380,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
         // 显示失败消息
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('图标上传失败，请检查文件格式'),
+            content: Text('图标上传失败，请检查文件格式或名称是否重复'),
             backgroundColor: Colors.red,
           ),
         );
@@ -399,47 +394,6 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
         _isUploading = false;
       });
     }
-  }
-
-  /// 从剪贴板粘贴图片
-  Future<void> _pasteFromClipboard() async {
-    // TODO: 实现从剪贴板粘贴图片功能
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('剪贴板粘贴功能暂未实现'), backgroundColor: Colors.orange),
-    );
-  }
-
-  /// 显示名称输入对话框
-  Future<String?> _showNameInputDialog() async {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('输入图标名称'),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: '请输入图标名称',
-              border: OutlineInputBorder(),
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(controller.text);
-              },
-              child: Text('确定'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   /// 显示自定义图标选项菜单
