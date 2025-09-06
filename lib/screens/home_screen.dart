@@ -128,14 +128,27 @@ class _HomeScreenState extends State<HomeScreen> {
       _programs = programs;
       _categories = categories;
 
-      // 如果当前选中的类别不存在，选择第一个类别或清空选择
+      // 获取可见的类别列表
+      final visibleCategories = _getVisibleCategories();
+
+      // 如果当前选中的类别不存在或不可见，选择第一个可见类别或清空选择
       if (_selectedCategory != null &&
-          !_categories.any((c) => c.id == _selectedCategory!.id)) {
-        _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
-      } else if (_selectedCategory == null && _categories.isNotEmpty) {
-        _selectedCategory = _categories.first;
+          !visibleCategories.any((c) => c.id == _selectedCategory!.id)) {
+        _selectedCategory = visibleCategories.isNotEmpty ? visibleCategories.first : null;
+      } else if (_selectedCategory == null && visibleCategories.isNotEmpty) {
+        _selectedCategory = visibleCategories.first;
       }
     });
+  }
+
+  List<Category> _getVisibleCategories() {
+    return _categories.where((category) {
+      // 如果是桌面类别，只有在有桌面备份时才显示
+      if (category.name == '桌面') {
+        return _hasDesktopBackup;
+      }
+      return true;
+    }).toList();
   }
 
   Future<void> _deleteProgram(Program program) async {
@@ -736,9 +749,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(vertical: 8),
-                itemCount: _categories.length,
+                itemCount: _getVisibleCategories().length,
                 itemBuilder: (context, index) {
-                  final category = _categories[index];
+                  final category = _getVisibleCategories()[index];
                   final isSelected = _selectedCategory?.id == category.id;
 
                   return _buildCategoryItem(
