@@ -6,6 +6,7 @@ import '../services/file_icon_service.dart';
 import '../services/icon_service.dart';
 import '../services/launcher_service.dart';
 import '../services/database_service.dart';
+import '../utils/category_localization_helper.dart';
 
 class ProgramTile extends StatefulWidget {
   final Program program;
@@ -31,6 +32,14 @@ class ProgramTile extends StatefulWidget {
 
 class _ProgramTileState extends State<ProgramTile> {
   bool _isHovering = false;
+
+  /// 获取本地化的类别名称
+  String _getLocalizedCategoryName(String categoryName) {
+    return CategoryLocalizationHelper.getLocalizedCategoryName(
+      context,
+      categoryName,
+    );
+  }
 
   void _showMessage(
     String message, {
@@ -216,7 +225,7 @@ class _ProgramTileState extends State<ProgramTile> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    category.name,
+                    _getLocalizedCategoryName(category.name),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black87,
@@ -328,7 +337,7 @@ class _ProgramTileState extends State<ProgramTile> {
         newCategory != null
             ? AppLocalizations.of(
               context,
-            )!.programMovedToCategory(widget.program.name, newCategory)
+            )!.programMovedToCategory(widget.program.name, _getLocalizedCategoryName(newCategory))
             : AppLocalizations.of(
               context,
             )!.programRemovedFromCategory(widget.program.name),

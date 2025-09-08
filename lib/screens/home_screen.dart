@@ -18,6 +18,7 @@ import '../widgets/program_tile.dart';
 import '../widgets/custom_title_bar.dart';
 import '../widgets/add_category_dialog.dart';
 import '../controllers/category_dialog_controller.dart';
+import '../utils/category_localization_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(Locale) onLanguageChanged;
@@ -146,11 +147,19 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Category> _getVisibleCategories() {
     return _categories.where((category) {
       // 如果是桌面类别，只有在有桌面备份时才显示
-      if (category.name == '桌面') {
+      if (category.name == DatabaseService.defaultDesktopCategoryName) {
         return _hasDesktopBackup;
       }
       return true;
     }).toList();
+  }
+
+  /// 获取本地化的类别名称
+  String _getLocalizedCategoryName(Category category) {
+    return CategoryLocalizationHelper.getLocalizedCategoryNameFromCategory(
+      context,
+      category,
+    );
   }
 
   Future<void> _deleteProgram(Program program) async {
@@ -170,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteCategory(Category category) async {
     try {
       // 保护桌面类别，不允许删除
-      if (category.name == '桌面') {
+        if (category.name == DatabaseService.defaultDesktopCategoryName) {
         _showMessage(
           AppLocalizations.of(context)!.desktopCategoryCannotDelete,
           color: Colors.orange,
@@ -211,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _showMessage(
         AppLocalizations.of(
           context,
-        )!.categoryDeletedWithPrograms(category.name, programCount),
+        )!.categoryDeletedWithPrograms(_getLocalizedCategoryName(category), programCount),
       );
     } catch (e) {
       _showMessage(
@@ -264,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 16),
-                Text("正在整理桌面..."),
+                Text(AppLocalizations.of(context)!.organizingDesktop),
               ],
             ),
           );
@@ -328,29 +337,29 @@ class _HomeScreenState extends State<HomeScreen> {
   // 恢复桌面
   Future<void> _restoreDesktop() async {
     try {
-      // 显示确认对话框
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('确认恢复'),
-            content: Text('确定要恢复桌面到整理前的状态吗？这将删除当前桌面上的所有文件并恢复备份的文件。'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text('取消'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text('确认'),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-              ),
-            ],
-          );
-        },
-      );
+      // // 显示确认对话框
+      // final confirmed = await showDialog<bool>(
+      //   context: context,
+      //   builder: (BuildContext context) {
+      //     return AlertDialog(
+      //       title: Text('确认恢复'),
+      //       content: Text(AppLocalizations.of(context)!.confirmRestoreDesktop),
+      //       actions: [
+      //         TextButton(
+      //           onPressed: () => Navigator.pop(context, false),
+      //           child: Text('取消'),
+      //         ),
+      //         TextButton(
+      //           onPressed: () => Navigator.pop(context, true),
+      //           child: Text('确认'),
+      //           style: TextButton.styleFrom(foregroundColor: Colors.red),
+      //         ),
+      //       ],
+      //     );
+      //   },
+      // );
 
-      if (confirmed != true) return;
+      // if (confirmed != true) return;
 
       // 显示加载对话框
       showDialog(
@@ -362,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 16),
-                Text("正在恢复桌面..."),
+                Text(AppLocalizations.of(context)!.restoringDesktop),
               ],
             ),
           );
@@ -373,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final backupInfo = await _desktopScannerService.getBackupInfo();
       if (backupInfo != null) {
         // 先获取桌面类别
-        final desktopCategory = await _databaseService.getCategoryByName('桌面');
+        final desktopCategory = await _databaseService.getCategoryByName(DatabaseService.defaultDesktopCategoryName);
         if (desktopCategory != null) {
           // 只在桌面类别中查找程序
           final desktopPrograms = await _databaseService
@@ -833,7 +842,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required VoidCallback onTap,
     VoidCallback? onDelete,
   }) {
-    bool showDeleteButton = _isProgramEditMode && category.name != '桌面';
+    bool showDeleteButton = _isProgramEditMode && category.name != DatabaseService.defaultDesktopCategoryName;
 
     return Stack(
       children: [
@@ -887,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           left: _isSidebarExpanded ? 12 : 0,
                         ),
                         child: Text(
-                          category.name,
+                          _getLocalizedCategoryName(category),
                           overflow: TextOverflow.clip,
                           maxLines: 1,
                           style: TextStyle(
@@ -941,7 +950,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // 桌面整理按钮组件函数
   Widget _buildDesktopOrganizerButton() {
     return Tooltip(
-      message: _hasDesktopBackup ? '恢复桌面' : '整理桌面',
+      message: _hasDesktopBackup ? AppLocalizations.of(context)!.restoreDesktop : AppLocalizations.of(context)!.organizeDesktop,
       preferBelow: false,
       verticalOffset: 20,
       child: InkWell(
@@ -970,7 +979,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                      _hasDesktopBackup ? '恢复桌面' : '整理桌面',
+                      _hasDesktopBackup ? AppLocalizations.of(context)!.restoreDesktop : AppLocalizations.of(context)!.organizeDesktop,
                       overflow: TextOverflow.clip,
                       maxLines: 1,
                       style: TextStyle(
@@ -1024,7 +1033,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                      '添加类别',
+                      AppLocalizations.of(context)!.addCategory,
                       overflow: TextOverflow.clip,
                       maxLines: 1,
                       style: TextStyle(fontSize: 14, color: Color(0xFF6C757D)),

@@ -126,5 +126,38 @@
   "selected": "Selected",
   "enterCategoryName": "Please enter category name",
   "categoryNameCannotBeEmpty": "Category name cannot be empty",
-  "categoryNameAlreadyExists": "Category name already exists"
+  "categoryNameAlreadyExists": "Category name already exists",
+  "tabEmoji": "Emoji",
+  "tabIcons": "Icons",
+  "tabCustom": "Custom",
+  "tabUpload": "Upload",
+  "noCustomIcons": "No custom icons",
+  "clickUploadTabToAdd": "Click upload tab to add custom icons",
+  "uploadCustomIcon": "Upload Custom Icon",
+  "supportedFormats": "Supports PNG, JPG, GIF, WebP formats",
+  "uploading": "Uploading...",
+  "selectImage": "Select Image",
+  "iconUploadSuccess": "Icon uploaded successfully",
+  "iconUploadFailed": "Icon upload failed, please check file format or if name already exists",
+  "uploadError": "Error occurred during upload",
+  "iconInfo": "Icon Info",
+  "deleteIcon": "Delete Icon",
+  "confirmDeleteIcon": "Confirm Delete",
+  "deleteIconMessage": "Are you sure you want to delete icon \"{iconName}\"? This action cannot be undone.",
+  "@deleteIconMessage": {
+    "placeholders": {
+      "iconName": {
+        "type": "String"
+      }
+    }
+  },
+  "iconDeleteSuccess": "Icon deleted successfully",
+  "iconDeleteFailed": "Icon delete failed",
+
+  "desktopCategory": "Desktop",
+  "organizingDesktop": "Organizing desktop...",
+  "restoringDesktop": "Restoring desktop...",
+  "organizeDesktop": "Organize Desktop",
+  "restoreDesktop": "Restore Desktop",
+  "confirmRestoreDesktop": "Are you sure you want to restore the desktop to its pre-organized state? This will delete all current files on the desktop and restore the backed up files."
 }

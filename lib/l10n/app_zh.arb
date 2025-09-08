@@ -74,5 +74,39 @@
   "selected": "已选择",
   "enterCategoryName": "请输入类别名称",
   "categoryNameCannotBeEmpty": "类别名称不能为空",
-  "categoryNameAlreadyExists": "类别名称已存在"
+  "categoryNameAlreadyExists": "类别名称已存在",
+  "understood": "我知道了",
+  "tabEmoji": "表情",
+  "tabIcons": "图标",
+  "tabCustom": "自定义",
+  "tabUpload": "上传",
+  "noCustomIcons": "暂无自定义图标",
+  "clickUploadTabToAdd": "点击上传标签页添加自定义图标",
+  "uploadCustomIcon": "上传自定义图标",
+  "supportedFormats": "支持 PNG、JPG、GIF、WebP 等格式",
+  "uploading": "上传中...",
+  "selectImage": "选择图片",
+  "iconUploadSuccess": "图标上传成功",
+  "iconUploadFailed": "图标上传失败，请检查文件格式或名称是否重复",
+  "uploadError": "上传过程中发生错误",
+  "iconInfo": "图标信息",
+  "deleteIcon": "删除图标",
+  "confirmDeleteIcon": "确认删除",
+  "deleteIconMessage": "确定要删除图标 \"{iconName}\" 吗？此操作不可撤销。",
+  "@deleteIconMessage": {
+    "placeholders": {
+      "iconName": {
+        "type": "String"
+      }
+    }
+  },
+  "iconDeleteSuccess": "图标删除成功",
+  "iconDeleteFailed": "图标删除失败",
+
+  "desktopCategory": "桌面",
+  "organizingDesktop": "正在整理桌面...",
+  "restoringDesktop": "正在恢复桌面...",
+  "organizeDesktop": "整理桌面",
+  "restoreDesktop": "恢复桌面",
+  "confirmRestoreDesktop": "确定要恢复桌面到整理前的状态吗？这将删除当前桌面上的所有文件并恢复备份的文件。"
 }

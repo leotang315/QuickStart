@@ -24,7 +24,7 @@ void main() async {
   WindowOptions windowOptions = WindowOptions(
     size: Size(800, 600),
     center: true,
-    title: '程序快速启动器',
+    title: 'QuickStart',
     minimumSize: Size(400, 300),
     windowButtonVisibility: false,
     titleBarStyle: TitleBarStyle.hidden,

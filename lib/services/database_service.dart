@@ -8,6 +8,9 @@ import '../models/custom_icon.dart';
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
   static Database? _database;
+  
+  // Desktop category default name constant
+  static const String defaultDesktopCategoryName = '桌面';
 
   factory DatabaseService() => _instance;
 
@@ -68,7 +71,7 @@ class DatabaseService {
 
     // 插入桌面类别，使用固定ID=0
     await db.execute('''
-      INSERT INTO categories (id, name, iconResource) VALUES (0, '桌面', 'icon:desktop_windows')
+      INSERT INTO categories (id, name, iconResource) VALUES (0, '$defaultDesktopCategoryName', 'icon:desktop_windows')
     ''');
   }
 

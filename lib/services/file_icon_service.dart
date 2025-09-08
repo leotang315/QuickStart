@@ -6,7 +6,7 @@ import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 import 'package:flutter/widgets.dart';
 
-import '../utls/raw_image_provider.dart';
+import '../utils/raw_image_provider.dart';
 import 'log_service.dart';
 
 // 在文件顶部添加 DLL 引用

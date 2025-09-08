@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/category.dart';
 import '../models/custom_icon.dart';
@@ -107,10 +108,10 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
         indicatorWeight: 2,
         labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
         tabs: [
-          Tab(text: 'Emoji'),
-          Tab(text: 'Icons'),
-          Tab(text: 'Custom'),
-          Tab(text: 'Upload'),
+          Tab(text: AppLocalizations.of(context)!.tabEmoji),
+          Tab(text: AppLocalizations.of(context)!.tabIcons),
+          Tab(text: AppLocalizations.of(context)!.tabCustom),
+          Tab(text: AppLocalizations.of(context)!.tabUpload),
         ],
       ),
     );
@@ -213,12 +214,12 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
             Icon(Icons.image_outlined, size: 48, color: Color(0xFF6C757D)),
             SizedBox(height: 16),
             Text(
-              '暂无自定义图标',
+              AppLocalizations.of(context)!.noCustomIcons,
               style: TextStyle(color: Color(0xFF6C757D), fontSize: 16),
             ),
             SizedBox(height: 8),
             Text(
-              '点击上传标签页添加自定义图标',
+              AppLocalizations.of(context)!.clickUploadTabToAdd,
               style: TextStyle(color: Color(0xFF6C757D), fontSize: 14),
             ),
           ],
@@ -292,7 +293,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
             ),
             SizedBox(height: 8),
             Text(
-              '上传自定义图标',
+              AppLocalizations.of(context)!.uploadCustomIcon,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -301,7 +302,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
             ),
             SizedBox(height: 8),
             Text(
-              '支持 PNG、JPG、GIF、WebP 等格式',
+              AppLocalizations.of(context)!.supportedFormats,
               style: TextStyle(fontSize: 12, color: Color(0xFF6C757D)),
             ),
             SizedBox(height: 8),
@@ -320,7 +321,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
                         ),
                       )
                       : Icon(Icons.add_photo_alternate),
-              label: Text(_isUploading ? '上传中...' : '选择图片'),
+              label: Text(_isUploading ? AppLocalizations.of(context)!.uploading : AppLocalizations.of(context)!.selectImage),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF0078D4),
                 foregroundColor: Colors.white,
@@ -374,20 +375,20 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
 
         // 显示成功消息
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('图标上传成功'), backgroundColor: Colors.green),
+          SnackBar(content: Text(AppLocalizations.of(context)!.iconUploadSuccess), backgroundColor: Colors.green),
         );
       } else {
         // 显示失败消息
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('图标上传失败，请检查文件格式或名称是否重复'),
+            content: Text(AppLocalizations.of(context)!.iconUploadFailed),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('上传过程中发生错误'), backgroundColor: Colors.red),
+        SnackBar(content: Text(AppLocalizations.of(context)!.uploadError), backgroundColor: Colors.red),
       );
     } finally {
       setState(() {
@@ -408,7 +409,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
             children: [
               ListTile(
                 leading: Icon(Icons.info_outline),
-                title: Text('图标信息'),
+                title: Text(AppLocalizations.of(context)!.iconInfo),
                 subtitle: Text(
                   '${customIcon.name} • ${(customIcon.fileSize / 1024).toStringAsFixed(1)} KB',
                 ),
@@ -416,7 +417,7 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
               Divider(),
               ListTile(
                 leading: Icon(Icons.delete, color: Colors.red),
-                title: Text('删除图标', style: TextStyle(color: Colors.red)),
+                title: Text(AppLocalizations.of(context)!.deleteIcon, style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.of(context).pop();
                   _deleteCustomIcon(customIcon);
@@ -435,17 +436,17 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('确认删除'),
-          content: Text('确定要删除图标 "${customIcon.name}" 吗？此操作不可撤销。'),
+          title: Text(AppLocalizations.of(context)!.confirmDeleteIcon),
+          content: Text(AppLocalizations.of(context)!.deleteIconMessage(customIcon.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: Text('删除'),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -459,11 +460,11 @@ class _MultiIconSelectorState extends State<MultiIconSelector>
       if (success) {
         _loadIconData();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('图标删除成功'), backgroundColor: Colors.green),
+          SnackBar(content: Text(AppLocalizations.of(context)!.iconDeleteSuccess), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('图标删除失败'), backgroundColor: Colors.red),
+          SnackBar(content: Text(AppLocalizations.of(context)!.iconDeleteFailed), backgroundColor: Colors.red),
         );
       }
     }
