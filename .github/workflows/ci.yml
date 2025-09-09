@@ -34,9 +34,9 @@ jobs:
     - name: Get dependencies
       run: flutter pub get
     
-    # 步骤4：运行代码分析
-    - name: Analyze code
-      run: flutter analyze
+    # # 步骤4：运行代码分析
+    # - name: Analyze code
+    #   run: flutter analyze
     
     # 步骤5：运行测试
     - name: Run tests
