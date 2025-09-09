@@ -2,7 +2,6 @@
 # 用于学习基本语法和概念
 
 name: Hello World
-
 # 触发条件：手动触发，方便学习测试
 on:
   workflow_dispatch:  # 允许在GitHub网页上手动运行
