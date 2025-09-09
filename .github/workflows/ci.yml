@@ -1,0 +1,43 @@
+# 最简单的GitHub Actions CI工作流
+# 这个工作流会在每次push和pull request时运行
+
+name: CI
+
+# 触发条件：当代码推送到main分支或创建pull request时
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# 定义工作任务
+jobs:
+  # 第一个任务：代码检查
+  test:
+    # 运行环境：使用最新的Windows
+    runs-on: windows-latest
+    
+    # 任务步骤
+    steps:
+    # 步骤1：检出代码
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # 步骤2：设置Flutter环境
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.1' 
+        channel: 'stable'
+    
+    # 步骤3：获取依赖
+    - name: Get dependencies
+      run: flutter pub get
+    
+    # 步骤4：运行代码分析
+    - name: Analyze code
+      run: flutter analyze
+    
+    # 步骤5：运行测试
+    - name: Run tests
+      run: flutter test
