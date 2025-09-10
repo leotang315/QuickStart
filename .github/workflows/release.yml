@@ -44,9 +44,10 @@ jobs:
       id: changelog 
       run: |
         VERSION=${{ steps.get_version.outputs.VERSION }}
-        
+        VERSION_NO_V=${VERSION#v}
+
         # 检查版本是否存在
-        if ! grep -q "^## \[$VERSION\]" docs/CHANGELOG.md; then
+        if ! grep -q "^## \[$VERSION_NO_V\]" docs/CHANGELOG.md; then
             echo "Version $VERSION not found in docs/CHANGELOG.md"
             echo "content=Release $VERSION" >> $GITHUB_OUTPUT
             exit 0
