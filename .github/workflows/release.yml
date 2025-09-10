@@ -8,6 +8,13 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+  inputs:
+    version:
+      description: 'Release version (e.g., v1.0.0)'
+      required: true
+      type: string
+  
 env:
   FLUTTER_VERSION: '3.29.0'
 
@@ -25,7 +32,12 @@ jobs:
     
     - name: Get version from tag
       id: get_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
 
     - name: Extract changelog
       id: changelog 
@@ -33,23 +45,23 @@ jobs:
         VERSION=${{ steps.get_version.outputs.VERSION }}
         
         # 检查版本是否存在
-        if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
-            echo "Version $VERSION not found in CHANGELOG.md"
+        if ! grep -q "^## \[$VERSION\]" docs/CHANGELOG.md; then
+            echo "Version $VERSION not found in docs/CHANGELOG.md"
             echo "content=Release $VERSION" >> $GITHUB_OUTPUT
             exit 0
         fi
         
         # 提取changelog内容
-        START_LINE=$(grep -n "^## \[$VERSION\]" CHANGELOG.md | cut -d: -f1)
-        NEXT_LINE=$(tail -n +$((START_LINE + 1)) CHANGELOG.md | grep -n "^## \[" | head -1 | cut -d: -f1)
+        START_LINE=$(grep -n "^## \[$VERSION\]" docs/CHANGELOG.md | cut -d: -f1)
+        NEXT_LINE=$(tail -n +$((START_LINE + 1)) docs/CHANGELOG.md | grep -n "^## \[" | head -1 | cut -d: -f1)
         
         if [ -z "$NEXT_LINE" ]; then
             # 第一个版本或最新版本，输出到文件末尾
-            CONTENT=$(tail -n +$START_LINE CHANGELOG.md)
+            CONTENT=$(tail -n +$START_LINE docs/CHANGELOG.md)
         else
             # 输出到下一个版本之前
             END_LINE=$((START_LINE + NEXT_LINE - 1))
-            CONTENT=$(sed -n "${START_LINE},${END_LINE}p" CHANGELOG.md)
+            CONTENT=$(sed -n "${START_LINE},${END_LINE}p" docs/CHANGELOG.md)
         fi
         
         # 输出到GitHub Actions
