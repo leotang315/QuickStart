@@ -4,11 +4,11 @@
 name: CI
 
 # 触发条件：当代码推送到main分支或创建pull request时
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+on: [push, pull_request]
+
+# 环境变量（全局）
+env:
+  FLUTTER_VERSION: '3.29.0'
 
 # 定义工作任务
 jobs:
@@ -27,7 +27,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.29.0' 
+         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
     
     # 步骤3：获取依赖
@@ -41,3 +41,29 @@ jobs:
     # 步骤5：运行测试
     - name: Run tests
       run: flutter test
+  
+  # 构建Windows任务
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    needs: test   
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Enable Windows desktop
+      run: flutter config --enable-windows-desktop
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Windows app
+      run: flutter build windows --release
+    

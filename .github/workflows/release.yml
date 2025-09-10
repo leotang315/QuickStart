@@ -1,0 +1,111 @@
+# 自动发布工作流
+# 演示持续部署(CD)：自动创建GitHub Release并上传构建产物
+
+name: Release
+
+# 触发条件：当推送版本标签时
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+env:
+  FLUTTER_VERSION: '3.29.0'
+
+jobs:
+  # 创建Release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Extract changelog
+      id: changelog 
+      run: |
+        VERSION=${{ steps.get_version.outputs.VERSION }}
+        
+        # 检查版本是否存在
+        if ! grep -q "^## \[$VERSION\]" CHANGELOG.md; then
+            echo "Version $VERSION not found in CHANGELOG.md"
+            echo "content=Release $VERSION" >> $GITHUB_OUTPUT
+            exit 0
+        fi
+        
+        # 提取changelog内容
+        START_LINE=$(grep -n "^## \[$VERSION\]" CHANGELOG.md | cut -d: -f1)
+        NEXT_LINE=$(tail -n +$((START_LINE + 1)) CHANGELOG.md | grep -n "^## \[" | head -1 | cut -d: -f1)
+        
+        if [ -z "$NEXT_LINE" ]; then
+            # 第一个版本或最新版本，输出到文件末尾
+            CONTENT=$(tail -n +$START_LINE CHANGELOG.md)
+        else
+            # 输出到下一个版本之前
+            END_LINE=$((START_LINE + NEXT_LINE - 1))
+            CONTENT=$(sed -n "${START_LINE},${END_LINE}p" CHANGELOG.md)
+        fi
+        
+        # 输出到GitHub Actions
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        echo "$CONTENT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.changelog.outputs.content }}
+        draft: false
+        prerelease: false
+  
+  # 构建并上传Windows版本
+  build-and-upload-windows:
+    name: Build and Upload Windows
+    runs-on: windows-latest
+    needs: create-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Enable Windows desktop
+      run: flutter config --enable-windows-desktop
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Windows app
+      run: flutter build windows --release
+    
+    - name: Create Windows archive
+      run: |
+        cd build/windows/x64/runner/Release
+        7z a -tzip ../../../../../QuickStart-Windows.zip *
+    
+    - name: Upload Windows Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./QuickStart-Windows.zip
+        asset_name: QuickStart-Windows.zip
+        asset_content_type: application/zip
+  
