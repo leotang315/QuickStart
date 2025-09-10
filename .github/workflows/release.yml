@@ -9,11 +9,11 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
-  inputs:
-    version:
-      description: 'Release version (e.g., v1.0.0)'
-      required: true
-      type: string
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
   
 env:
   FLUTTER_VERSION: '3.29.0'
