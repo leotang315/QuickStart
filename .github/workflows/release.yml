@@ -54,7 +54,7 @@ jobs:
         fi
         
         # 提取changelog内容
-        START_LINE=$(grep -n "^## \[$VERSION\]" docs/CHANGELOG.md | cut -d: -f1)
+        START_LINE=$(grep -n "^## \[$VERSION_NO_V\]" docs/CHANGELOG.md | cut -d: -f1)
         NEXT_LINE=$(tail -n +$((START_LINE + 1)) docs/CHANGELOG.md | grep -n "^## \[" | head -1 | cut -d: -f1)
         
         if [ -z "$NEXT_LINE" ]; then
