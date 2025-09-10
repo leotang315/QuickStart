@@ -17,14 +17,13 @@ on:
   
 env:
   FLUTTER_VERSION: '3.29.0'
+permissions: write-all
 
 jobs:
   # 创建Release
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     
