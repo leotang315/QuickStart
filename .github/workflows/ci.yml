@@ -28,7 +28,7 @@ jobs:
       uses: subosito/flutter-action@v2
       with:
          flutter-version: ${{ env.FLUTTER_VERSION }}
-        channel: 'stable'
+         channel: 'stable'
     
     # 步骤3：获取依赖
     - name: Get dependencies
