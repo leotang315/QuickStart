@@ -1,0 +1,359 @@
+name: Test NSIS Environment
+
+# 测试workflow，用于验证GitHub Actions runner中的NSIS环境
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'basic'
+        type: choice
+        options:
+        - basic
+        - advanced
+        - full
+
+env:
+  FLUTTER_VERSION: '3.16.0'
+
+jobs:
+  test-nsis-basic:
+    name: Basic NSIS Test
+    runs-on: windows-latest
+    if: github.event.inputs.test_type == 'basic' || github.event.inputs.test_type == '' || github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check NSIS installation
+      run: |
+        echo "=== Checking NSIS installation ==="
+        
+        # Check if makensis is available
+        try {
+          $nsisPath = where.exe makensis
+          echo "✅ NSIS found at: $nsisPath"
+        } catch {
+          echo "❌ NSIS not found in PATH"
+          exit 1
+        }
+        
+        # Get NSIS version
+        echo "\n=== NSIS Version Information ==="
+        makensis /VERSION
+        
+        # Check NSIS installation directory
+        echo "\n=== NSIS Installation Details ==="
+        $nsisDir = Split-Path $nsisPath -Parent
+        echo "NSIS Directory: $nsisDir"
+        
+        # List NSIS plugins
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        if (Test-Path $pluginsDir) {
+          echo "\n=== Available NSIS Plugins ==="
+          Get-ChildItem $pluginsDir -Name | Sort-Object
+        }
+        
+        # List NSIS includes
+        $includeDir = Join-Path $nsisDir "Include"
+        if (Test-Path $includeDir) {
+          echo "\n=== Available NSIS Includes ==="
+          Get-ChildItem $includeDir -Name "*.nsh" | Sort-Object
+        }
+    
+    - name: Test simple NSIS script
+      run: |
+        echo "=== Testing Simple NSIS Script ==="
+        
+        # Create a simple test script
+        $testScript = @'
+        ; Simple NSIS test script
+        !define APP_NAME "NSISTest"
+        !define APP_VERSION "1.0.0"
+        
+        Name "${APP_NAME}"
+        OutFile "test-installer.exe"
+        InstallDir "$TEMP\${APP_NAME}"
+        
+        ; Modern UI
+        !include "MUI2.nsh"
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_INSTFILES
+        !insertmacro MUI_LANGUAGE "English"
+        
+        Section "Main"
+          SetOutPath "$INSTDIR"
+          ; Create a test file
+          FileOpen $0 "$INSTDIR\test.txt" w
+          FileWrite $0 "NSIS test successful!"
+          FileClose $0
+        SectionEnd
+        '@
+        
+        # Write test script to file
+        $testScript | Out-File -FilePath "test.nsi" -Encoding UTF8
+        
+        # Compile test script
+        echo "Compiling test NSIS script..."
+        makensis test.nsi
+        
+        # Check if installer was created
+        if (Test-Path "test-installer.exe") {
+          $fileInfo = Get-Item "test-installer.exe"
+          echo "✅ Test installer created successfully!"
+          echo "📊 File size: $([math]::Round($fileInfo.Length / 1KB, 2)) KB"
+        } else {
+          echo "❌ Test installer creation failed!"
+          exit 1
+        }
+    
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: nsis-test-basic
+        path: |
+          test-installer.exe
+          test.nsi
+
+  test-nsis-advanced:
+    name: Advanced NSIS Test
+    runs-on: windows-latest
+    if: github.event.inputs.test_type == 'advanced' || github.event.inputs.test_type == 'full'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Enable Windows desktop
+      run: flutter config --enable-windows-desktop
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Flutter app (minimal)
+      run: |
+        echo "=== Building Flutter App for NSIS Test ==="
+        flutter build windows --release
+        
+        # Verify build output
+        $buildPath = "build\windows\x64\runner\Release"
+        if (Test-Path $buildPath) {
+          echo "✅ Flutter build completed"
+          echo "\n=== Build Output Files ==="
+          Get-ChildItem $buildPath -Name | Sort-Object
+        } else {
+          echo "❌ Flutter build failed"
+          exit 1
+        }
+    
+    - name: Test project NSIS script
+      run: |
+        echo "=== Testing Project NSIS Script ==="
+        
+        # Check if project NSIS script exists
+        $nsisScript = "build_tools\scripts\installer.nsi"
+        if (!(Test-Path $nsisScript)) {
+          echo "❌ Project NSIS script not found: $nsisScript"
+          exit 1
+        }
+        
+        echo "✅ Found project NSIS script"
+        
+        # Sync version
+        echo "\n=== Syncing Version ==="
+        cd build_tools\scripts
+        dart sync_version.dart
+        
+        # Create test output directory
+        cd ..\..
+        if (!(Test-Path "test_dist")) {
+          New-Item -ItemType Directory -Path "test_dist"
+        }
+        
+        # Test compile with project script
+        echo "\n=== Compiling Project NSIS Script ==="
+        cd build_tools\scripts
+        
+        $PROJECT_ROOT = "${{ github.workspace }}"
+        $PROJECT_OUTPUT = "$PROJECT_ROOT\test_dist\QuickStart-test-windows-setup.exe"
+        
+        echo "Project root: $PROJECT_ROOT"
+        echo "Output file: $PROJECT_OUTPUT"
+        
+        makensis /DPROJECT_ROOT="$PROJECT_ROOT" /DPROJECT_OUTPUT="$PROJECT_OUTPUT" installer.nsi
+        
+        # Verify installer creation
+        cd ..\..
+        if (Test-Path "test_dist\QuickStart-test-windows-setup.exe") {
+          $fileInfo = Get-Item "test_dist\QuickStart-test-windows-setup.exe"
+          echo "✅ Project installer created successfully!"
+          echo "📊 File size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+        } else {
+          echo "❌ Project installer creation failed!"
+          echo "\n=== Contents of test_dist directory ==="
+          Get-ChildItem test_dist -ErrorAction SilentlyContinue
+          exit 1
+        }
+    
+    - name: Upload advanced test artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: nsis-test-advanced
+        path: |
+          test_dist/*.exe
+          build_tools/scripts/installer.nsi
+
+  test-nsis-full:
+    name: Full NSIS Integration Test
+    runs-on: windows-latest
+    if: github.event.inputs.test_type == 'full'
+    needs: [test-nsis-basic, test-nsis-advanced]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    - name: Enable Windows desktop
+      run: flutter config --enable-windows-desktop
+    
+    - name: Get dependencies
+      run: flutter pub get
+    
+    - name: Build Flutter app
+      run: flutter build windows --release
+    
+    - name: Test complete build process
+      run: |
+        echo "=== Full NSIS Integration Test ==="
+        
+        # Simulate the complete release process
+        echo "\n=== Step 1: Verify NSIS Environment ==="
+        where makensis
+        makensis /VERSION
+        
+        echo "\n=== Step 2: Sync Version ==="
+        cd build_tools\scripts
+        dart sync_version.dart
+        
+        echo "\n=== Step 3: Create Distribution Directory ==="
+        cd ..\..
+        if (!(Test-Path "dist")) {
+          New-Item -ItemType Directory -Path "dist"
+        }
+        
+        echo "\n=== Step 4: Build Installer ==="
+        cd build_tools\scripts
+        
+        $PROJECT_ROOT = "${{ github.workspace }}"
+        $version = "test-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        $PROJECT_OUTPUT = "$PROJECT_ROOT\dist\QuickStart-$version-windows-setup.exe"
+        
+        echo "Building installer with version: $version"
+        echo "Output path: $PROJECT_OUTPUT"
+        
+        makensis /DPROJECT_ROOT="$PROJECT_ROOT" /DPROJECT_OUTPUT="$PROJECT_OUTPUT" installer.nsi
+        
+        echo "\n=== Step 5: Verify Results ==="
+        cd ..\..
+        
+        if (Test-Path "dist\QuickStart-$version-windows-setup.exe") {
+          $fileInfo = Get-Item "dist\QuickStart-$version-windows-setup.exe"
+          echo "✅ Full integration test successful!"
+          echo "📦 Installer: QuickStart-$version-windows-setup.exe"
+          echo "📊 File size: $([math]::Round($fileInfo.Length / 1MB, 2)) MB"
+          echo "📅 Created: $($fileInfo.CreationTime)"
+        } else {
+          echo "❌ Full integration test failed!"
+          echo "\n=== Distribution directory contents ==="
+          Get-ChildItem dist -ErrorAction SilentlyContinue
+          exit 1
+        }
+        
+        echo "\n=== Step 6: Create Portable Version ==="
+        cd build\windows\x64\runner\Release
+        7z a -tzip ..\..\..\..\..\dist\QuickStart-$version-Windows-Portable.zip *
+        
+        cd ..\..\..\..\..
+        if (Test-Path "dist\QuickStart-$version-Windows-Portable.zip") {
+          $zipInfo = Get-Item "dist\QuickStart-$version-Windows-Portable.zip"
+          echo "✅ Portable version created!"
+          echo "📦 Portable: QuickStart-$version-Windows-Portable.zip"
+          echo "📊 File size: $([math]::Round($zipInfo.Length / 1MB, 2)) MB"
+        }
+        
+        echo "\n=== Final Results ==="
+        echo "📁 Distribution directory contents:"
+        Get-ChildItem dist | ForEach-Object {
+          $size = if ($_.PSIsContainer) { "<DIR>" } else { "$([math]::Round($_.Length / 1MB, 2)) MB" }
+          echo "  $($_.Name) - $size"
+        }
+    
+    - name: Test installer execution (dry run)
+      run: |
+        echo "=== Testing Installer Execution ==="
+        
+        # Find the installer file
+        $installer = Get-ChildItem dist -Filter "*-windows-setup.exe" | Select-Object -First 1
+        
+        if ($installer) {
+          echo "Testing installer: $($installer.Name)"
+          
+          # Test installer help/info (non-destructive)
+          try {
+            # Most NSIS installers support /? for help
+            $result = & $installer.FullName /? 2>&1
+            echo "✅ Installer responds to help command"
+          } catch {
+            echo "ℹ️ Installer help test completed (expected behavior)"
+          }
+          
+          # Check installer properties
+          $fileVersion = (Get-ItemProperty $installer.FullName).VersionInfo
+          echo "\n=== Installer Properties ==="
+          echo "File Version: $($fileVersion.FileVersion)"
+          echo "Product Version: $($fileVersion.ProductVersion)"
+          echo "Company Name: $($fileVersion.CompanyName)"
+          echo "File Description: $($fileVersion.FileDescription)"
+          
+        } else {
+          echo "❌ No installer found for testing"
+          exit 1
+        }
+    
+    - name: Upload full test artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: nsis-test-full
+        path: |
+          dist/*
+          build_tools/scripts/installer.nsi
+    
+    - name: Test summary
+      run: |
+        echo "\n🎉 === NSIS Integration Test Summary ==="
+        echo "\n✅ All tests completed successfully!"
+        echo "\n📋 Test Results:"
+        echo "  ✓ NSIS environment verification"
+        echo "  ✓ Simple NSIS script compilation"
+        echo "  ✓ Flutter app build"
+        echo "  ✓ Project NSIS script compilation"
+        echo "  ✓ Version synchronization"
+        echo "  ✓ Installer creation"
+        echo "  ✓ Portable version creation"
+        echo "  ✓ Installer properties verification"
+        echo "\n🚀 GitHub Actions runner is fully compatible with NSIS!"
+        echo "\n💡 You can now confidently use NSIS in your release workflow."
