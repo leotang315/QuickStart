@@ -15,140 +15,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    # - name: Check Inno Setup installation
-    #   run: |
-    #     echo "=== Checking Inno Setup Installation ==="
-        
-    #     # Check if Inno Setup is installed
-    #     $innoPath = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-    #     if ($innoPath) {
-    #       echo "✅ Inno Setup found at: $($innoPath.Source)"
-          
-    #       # Check version
-    #       echo "\n=== Inno Setup Version ==="
-    #       & "ISCC.exe" /?
-          
-    #       # Check installation directory
-    #       echo "\n=== Inno Setup Installation Directory ==="
-    #       $innoDir = Split-Path $innoPath.Source
-    #       echo "Installation directory: $innoDir"
-          
-    #       # List available files
-    #       echo "\n=== Available Files ==="
-    #       Get-ChildItem $innoDir -Name
-          
-    #       # # Check for language files
-    #       # echo "\n=== Language Files ==="
-    #       # $langDir = Join-Path $innoDir "Languages"
-    #       # if (Test-Path $langDir) {
-    #       #   Get-ChildItem $langDir -Name "*.isl" | ForEach-Object { echo "  - $_" }
-    #       # } else {
-    #       #   echo "Languages directory not found"
-    #       # }
-          
-    #     } else {
-    #       echo "❌ Inno Setup not found in PATH"
-    #       echo "\n=== Searching for Inno Setup ==="
-          
-    #       # Search common installation paths
-    #       $commonPaths = @(
-    #         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    #         "C:\Program Files\Inno Setup 6\ISCC.exe",
-    #         "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-    #         "C:\Program Files\Inno Setup 5\ISCC.exe"
-    #       )
-          
-    #       foreach ($path in $commonPaths) {
-    #         if (Test-Path $path) {
-    #           echo "Found Inno Setup at: $path"
-    #           & $path /?
-    #           break
-    #         }
-    #       }
-    #     }
-    #   shell: powershell
-      
-    - name: Setup Inno Setup Environment
-      run: |
-        echo "=== Setting up Inno Setup Environment ==="
-        
-        # Function to find Inno Setup compiler
-        function Find-InnoSetupCompiler {
-          # Check in PATH first
-          $pathInno = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-          if ($pathInno) {
-            return $pathInno.Source
-          }
-          
-          # Check common installation paths
-          $commonPaths = @(
-            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-            "C:\Program Files\Inno Setup 6\ISCC.exe",
-            "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-            "C:\Program Files\Inno Setup 5\ISCC.exe"
-          )
-          
-          foreach ($path in $commonPaths) {
-            if (Test-Path $path) {
-              return $path
-            }
-          }
-          
-          return $null
-        }
-        
-        # Find existing installation
-        $innoPath = Find-InnoSetupCompiler
-        
-        if ($innoPath) {
-          echo "✅ Inno Setup found at: $innoPath"
-          echo "ℹ️ Using existing installation"
-        } else {
-          echo "📥 Inno Setup not found, proceeding with installation"
-          
-          # Download Inno Setup
-          $downloadUrl = "https://jrsoftware.org/download.php/is.exe"
-          $installerPath = "$env:TEMP\innosetup-installer.exe"
-          
-          echo "Downloading Inno Setup from: $downloadUrl"
-          Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
-          
-          if (Test-Path $installerPath) {
-            echo "✅ Download completed: $installerPath"
-            echo "File size: $((Get-Item $installerPath).Length) bytes"
-            
-            # Install silently
-            echo "\n=== Installing Inno Setup ==="
-            Start-Process -FilePath $installerPath -ArgumentList "/SILENT", "/SUPPRESSMSGBOXES" -Wait
-            
-            # Find the newly installed compiler
-            $innoPath = Find-InnoSetupCompiler
-            
-            if ($innoPath) {
-              echo "✅ Inno Setup installed successfully at: $innoPath"
-            } else {
-              echo "❌ Installation verification failed"
-              exit 1
-            }
-          } else {
-            echo "❌ Download failed"
-            exit 1
-          }
-        }
-        
-        # Set environment variable for subsequent steps
-        echo "INNO_SETUP_COMPILER=$innoPath" >> $env:GITHUB_ENV
-        echo "\n=== Environment Variable Set ==="
-        echo "INNO_SETUP_COMPILER=$innoPath"
-        
-        # Verify compiler works
-        echo "\n=== Verifying Compiler ==="
-        & $innoPath /?
-      shell: powershell
-      
     - name: Test simple Inno Setup script
       run: |
-        echo "=== Testing Simple Inno Setup Script ==="
+        echo "=== Creating Simple Test Script ==="
         
         # Create a simple test script
         $testScript = @'
@@ -173,102 +42,83 @@ jobs:
         $scriptPath = "test-script.iss"
         $testScript | Out-File -FilePath $scriptPath -Encoding UTF8
         
-        echo "Created test script: $scriptPath"
-        echo "\n=== Script Content ==="
-        Get-Content $scriptPath
+        echo "✅ Created test script: $scriptPath"
+      shell: powershell
+      
+    - name: Compile simple test script
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+      with:
+        path: test-script.iss
+        options: /Q
         
-        # Compile the script
-        echo "\n=== Compiling Test Script ==="
+    - name: Verify test compilation
+      run: |
+        echo "=== Verifying Test Compilation ==="
         
-        # Use environment variable set in previous step
-        $innoPath = $env:INNO_SETUP_COMPILER
-        
-        if ($innoPath -and (Test-Path $innoPath)) {
-          echo "Using Inno Setup compiler: $innoPath"
-          
-          & $innoPath $scriptPath
-          
-          if ($LASTEXITCODE -eq 0) {
-            echo "✅ Script compiled successfully"
-            
-            # Check if setup file was created
-            if (Test-Path "TestAppSetup.exe") {
-              echo "✅ Setup file created: TestAppSetup.exe"
-              echo "File size: $((Get-Item 'TestAppSetup.exe').Length) bytes"
-            } else {
-              echo "❌ Setup file not found"
-            }
-          } else {
-            echo "❌ Script compilation failed with exit code: $LASTEXITCODE"
-            exit 1
-          }
+        if (Test-Path "TestAppSetup.exe") {
+          echo "✅ Setup file created: TestAppSetup.exe"
+          echo "File size: $((Get-Item 'TestAppSetup.exe').Length) bytes"
         } else {
-          echo "❌ Inno Setup compiler not found in environment variable"
-          echo "INNO_SETUP_COMPILER=$env:INNO_SETUP_COMPILER"
+          echo "❌ Setup file not found"
           exit 1
         }
       shell: powershell
       
-    - name: Test project Inno Setup script
+    - name: Prepare dummy build files
       run: |
-        echo "=== Testing Project Inno Setup Script ==="
+        echo "=== Preparing Dummy Build Files ==="
         
-        $projectScript = "build_tools\scripts\installer.iss"
+        # Create dummy directories and files for testing
+        $buildDir = "build\windows\x64\runner\Release"
+        New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
         
-        if (Test-Path $projectScript) {
-          echo "Found project script: $projectScript"
-          
-          # Show script content (first 50 lines)
-          echo "\n=== Script Preview ==="
-          Get-Content $projectScript | Select-Object -First 50
-          
-          # Try to compile (this will likely fail due to missing files, but we can test syntax)
-          echo "\n=== Testing Script Syntax ==="
-          $innoPath = $env:INNO_SETUP_COMPILER
-          
-          # Create dummy directories and files for testing
-          $buildDir = "build\windows\x64\runner\Release"
-          New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
-          
-          # Create dummy executable
-          "dummy content" | Out-File -FilePath "$buildDir\quick_start.exe" -Encoding UTF8
-          
-          # Create dummy DLL files
-          $dllFiles = @(
-            "flutter_windows.dll",
-            "WinSparkle.dll",
-            "auto_updater_windows_plugin.dll",
-            "connectivity_plus_plugin.dll",
-            "desktop_drop_plugin.dll",
-            "hotkey_manager_windows_plugin.dll",
-            "screen_retriever_plugin.dll",
-            "url_launcher_windows_plugin.dll",
-            "window_manager_plugin.dll"
-          )
-          
-          foreach ($dll in $dllFiles) {
-            "dummy content" | Out-File -FilePath "$buildDir\$dll" -Encoding UTF8
-          }
-          
-          # Create dummy data directory
-          New-Item -ItemType Directory -Path "$buildDir\data" -Force | Out-Null
-          "dummy data" | Out-File -FilePath "$buildDir\data\test.txt" -Encoding UTF8
-          
-          # Try to compile
-          try {
-            & $innoPath $projectScript
-            
-            if ($LASTEXITCODE -eq 0) {
-              echo "✅ Project script compiled successfully"
-            } else {
-              echo "⚠️ Project script compilation failed (expected due to missing real files)"
-              echo "Exit code: $LASTEXITCODE"
-            }
-          } catch {
-            echo "⚠️ Compilation error (expected): $($_.Exception.Message)"
+        # Create dummy executable
+        "dummy content" | Out-File -FilePath "$buildDir\quick_start.exe" -Encoding UTF8
+        
+        # Create dummy DLL files
+        $dllFiles = @(
+          "flutter_windows.dll",
+          "WinSparkle.dll",
+          "auto_updater_windows_plugin.dll",
+          "connectivity_plus_plugin.dll",
+          "desktop_drop_plugin.dll",
+          "hotkey_manager_windows_plugin.dll",
+          "screen_retriever_plugin.dll",
+          "url_launcher_windows_plugin.dll",
+          "window_manager_plugin.dll"
+        )
+        
+        foreach ($dll in $dllFiles) {
+          "dummy content" | Out-File -FilePath "$buildDir\$dll" -Encoding UTF8
+        }
+        
+        # Create dummy data directory
+        New-Item -ItemType Directory -Path "$buildDir\data" -Force | Out-Null
+        "dummy data" | Out-File -FilePath "$buildDir\data\test.txt" -Encoding UTF8
+        
+        echo "✅ Dummy build files created"
+      shell: powershell
+      
+    - name: Test project Inno Setup script
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+      with:
+        path: build_tools/scripts/installer.iss
+        options: /Q
+      continue-on-error: true
+      
+    - name: Check project compilation result
+      run: |
+        echo "=== Checking Project Compilation Result ==="
+        
+        # Check if installer was created
+        $distDir = "dist"
+        if (Test-Path $distDir) {
+          echo "✅ Dist directory found"
+          Get-ChildItem $distDir -Recurse | ForEach-Object {
+            echo "  - $($_.Name) ($($_.Length) bytes)"
           }
         } else {
-          echo "❌ Project script not found: $projectScript"
+          echo "⚠️ No dist directory found (expected for syntax test)"
         }
       shell: powershell
       
@@ -292,70 +142,7 @@ jobs:
   #   - name: Get dependencies
   #     run: flutter pub get
       
-  #   - name: Setup Inno Setup Environment
-  #     run: |
-  #       echo "=== Setting up Inno Setup Environment ==="
-        
-  #       # Function to find Inno Setup compiler
-  #       function Find-InnoSetupCompiler {
-  #         # Check in PATH first
-  #         $pathInno = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-  #         if ($pathInno) {
-  #           return $pathInno.Source
-  #         }
-          
-  #         # Check common installation paths
-  #         $commonPaths = @(
-  #           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-  #           "C:\Program Files\Inno Setup 6\ISCC.exe",
-  #           "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-  #           "C:\Program Files\Inno Setup 5\ISCC.exe"
-  #         )
-          
-  #         foreach ($path in $commonPaths) {
-  #           if (Test-Path $path) {
-  #             return $path
-  #           }
-  #         }
-          
-  #         return $null
-  #       }
-        
-  #       # Find existing installation
-  #       $innoPath = Find-InnoSetupCompiler
-        
-  #       if ($innoPath) {
-  #         echo "✅ Inno Setup found at: $innoPath"
-  #         echo "ℹ️ Using existing installation"
-  #       } else {
-  #         echo "📥 Inno Setup not found, proceeding with installation"
-          
-  #         # Download Inno Setup
-  #         $downloadUrl = "https://jrsoftware.org/download.php/is.exe"
-  #         $installerPath = "$env:TEMP\innosetup-installer.exe"
-          
-  #         echo "Downloading Inno Setup from: $downloadUrl"
-  #         Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
-  #         Start-Process -FilePath $installerPath -ArgumentList "/SILENT", "/SUPPRESSMSGBOXES" -Wait
-          
-  #         # Find the newly installed compiler
-  #         $innoPath = Find-InnoSetupCompiler
-          
-  #         if ($innoPath) {
-  #           echo "✅ Inno Setup installed successfully at: $innoPath"
-  #         } else {
-  #           echo "❌ Installation verification failed"
-  #           exit 1
-  #         }
-  #       }
-        
-  #       # Set environment variable for subsequent steps
-  #       echo "INNO_SETUP_COMPILER=$innoPath" >> $env:GITHUB_ENV
-  #       echo "\n=== Environment Variable Set ==="
-  #       echo "INNO_SETUP_COMPILER=$innoPath"
-  #     shell: powershell
-      
-  #   - name: Build Flutter app (minimal)
+  #   - name: Build Flutter app
   #     run: |
   #       echo "=== Building Flutter App ==="
   #       flutter build windows --release
@@ -370,46 +157,29 @@ jobs:
   #         echo "❌ Build directory not found"
   #         exit 1
   #       }
+  #     shell: powershell
       
-  #   - name: Test complete build process
+  #   - name: Compile installer with real Flutter build
+  #     uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+  #     with:
+  #       path: build_tools/scripts/installer.iss
+  #       options: /Q
+  #     continue-on-error: true
+        
+  #   - name: Check build results
   #     run: |
-  #       echo "=== Testing Complete Build Process ==="
+  #       echo "=== Checking Build Results ==="
         
-  #       # Use environment variable set in previous step
-  #       $innoPath = $env:INNO_SETUP_COMPILER
-  #       $projectScript = "build_tools\scripts\installer.iss"
-        
-  #       if ($innoPath -and (Test-Path $innoPath)) {
-  #         echo "Using Inno Setup compiler: $innoPath"
-          
-  #         if (Test-Path $projectScript) {
-  #           echo "Compiling installer with real Flutter build..."
-            
-  #           try {
-  #             & $innoPath $projectScript
-              
-  #             if ($LASTEXITCODE -eq 0) {
-  #               echo "✅ Installer compiled successfully"
-                
-  #               # Look for generated installer
-  #               $distDir = "dist"
-  #               if (Test-Path $distDir) {
-  #                 echo "\n=== Generated Files ==="
-  #                 Get-ChildItem $distDir -Recurse -Name
-  #               }
-  #             } else {
-  #               echo "❌ Installer compilation failed with exit code: $LASTEXITCODE"
-  #             }
-  #           } catch {
-  #             echo "❌ Compilation error: $($_.Exception.Message)"
-  #           }
-  #         } else {
-  #           echo "❌ Project script not found"
+  #       # Look for generated installer
+  #       $distDir = "dist"
+  #       if (Test-Path $distDir) {
+  #         echo "✅ Installer generated successfully"
+  #         echo "\n=== Generated Files ==="
+  #         Get-ChildItem $distDir -Recurse | ForEach-Object {
+  #           echo "  - $($_.Name) ($($_.Length) bytes)"
   #         }
   #       } else {
-  #         echo "❌ Inno Setup compiler not found in environment variable"
-  #         echo "INNO_SETUP_COMPILER=$env:INNO_SETUP_COMPILER"
-  #         exit 1
+  #         echo "⚠️ No installer generated (may be expected)"
   #       }
   #     shell: powershell
       
@@ -437,103 +207,28 @@ jobs:
   #   - name: Build Flutter app
   #     run: flutter build windows --release
       
-  #   - name: Setup Inno Setup Environment
-  #     run: |
-  #       echo "=== Setting up Inno Setup Environment ==="
-        
-  #       # Function to find Inno Setup compiler
-  #       function Find-InnoSetupCompiler {
-  #         # Check in PATH first
-  #         $pathInno = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-  #         if ($pathInno) {
-  #           return $pathInno.Source
-  #         }
-          
-  #         # Check common installation paths
-  #         $commonPaths = @(
-  #           "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-  #           "C:\Program Files\Inno Setup 6\ISCC.exe",
-  #           "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-  #           "C:\Program Files\Inno Setup 5\ISCC.exe"
-  #         )
-          
-  #         foreach ($path in $commonPaths) {
-  #           if (Test-Path $path) {
-  #             return $path
-  #           }
-  #         }
-          
-  #         return $null
-  #       }
-        
-  #       # Find existing installation
-  #       $innoPath = Find-InnoSetupCompiler
-        
-  #       if ($innoPath) {
-  #         echo "✅ Inno Setup found at: $innoPath"
-  #         echo "ℹ️ Using existing installation"
-  #       } else {
-  #         echo "📥 Inno Setup not found, proceeding with installation"
-          
-  #         # Download Inno Setup
-  #         $downloadUrl = "https://jrsoftware.org/download.php/is.exe"
-  #         $installerPath = "$env:TEMP\innosetup-installer.exe"
-          
-  #         echo "Downloading Inno Setup from: $downloadUrl"
-  #         Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
-  #         Start-Process -FilePath $installerPath -ArgumentList "/SILENT", "/SUPPRESSMSGBOXES" -Wait
-          
-  #         # Find the newly installed compiler
-  #         $innoPath = Find-InnoSetupCompiler
-          
-  #         if ($innoPath) {
-  #           echo "✅ Inno Setup installed successfully at: $innoPath"
-  #         } else {
-  #           echo "❌ Installation verification failed"
-  #           exit 1
-  #         }
-  #       }
-        
-  #       # Set environment variable for subsequent steps
-  #       echo "INNO_SETUP_COMPILER=$innoPath" >> $env:GITHUB_ENV
-  #       echo "\n=== Environment Variable Set ==="
-  #       echo "INNO_SETUP_COMPILER=$innoPath"
-  #     shell: powershell
+  #   - name: Compile full installer
+  #     uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+  #     with:
+  #       path: build_tools/scripts/installer.iss
+  #       options: /Q
       
-  #   - name: Test complete build process
+  #   - name: Verify full build results
   #     run: |
   #       echo "=== Full Build and Package Test ==="
         
-  #       # Use environment variable set in previous step
-  #       $innoPath = $env:INNO_SETUP_COMPILER
-  #       $projectScript = "build_tools\scripts\installer.iss"
-        
-  #       if ($innoPath -and (Test-Path $innoPath)) {
-  #         echo "Using Inno Setup compiler: $innoPath"
+  #       # Check for generated installer
+  #       $distDir = "dist"
+  #       if (Test-Path $distDir) {
+  #         echo "✅ Full build process completed successfully"
           
-  #         # Ensure dist directory exists
-  #         New-Item -ItemType Directory -Path "dist" -Force | Out-Null
-          
-  #         # Compile installer
-  #         & $innoPath $projectScript
-          
-  #         if ($LASTEXITCODE -eq 0) {
-  #           echo "✅ Full build process completed successfully"
-            
-  #           # Show final results
-  #           echo "\n=== Final Build Results ==="
-  #           if (Test-Path "dist") {
-  #             Get-ChildItem "dist" -Recurse | ForEach-Object {
-  #               echo "$($_.FullName) - $($_.Length) bytes"
-  #             }
-  #           }
-  #         } else {
-  #           echo "❌ Full build process failed"
-  #           exit 1
+  #         # Show final results
+  #         echo "\n=== Final Build Results ==="
+  #         Get-ChildItem $distDir -Recurse | ForEach-Object {
+  #           echo "$($_.FullName) - $($_.Length) bytes"
   #         }
   #       } else {
-  #         echo "❌ Inno Setup compiler not found in environment variable"
-  #         echo "INNO_SETUP_COMPILER=$env:INNO_SETUP_COMPILER"
+  #         echo "❌ Full build process failed - no dist directory found"
   #         exit 1
   #       }
   #     shell: powershell
