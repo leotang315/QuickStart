@@ -37,14 +37,14 @@ jobs:
           echo "\n=== Available Files ==="
           Get-ChildItem $innoDir -Name
           
-          # Check for language files
-          echo "\n=== Language Files ==="
-          $langDir = Join-Path $innoDir "Languages"
-          if (Test-Path $langDir) {
-            Get-ChildItem $langDir -Name "*.isl" | ForEach-Object { echo "  - $_" }
-          } else {
-            echo "Languages directory not found"
-          }
+          # # Check for language files
+          # echo "\n=== Language Files ==="
+          # $langDir = Join-Path $innoDir "Languages"
+          # if (Test-Path $langDir) {
+          #   Get-ChildItem $langDir -Name "*.isl" | ForEach-Object { echo "  - $_" }
+          # } else {
+          #   echo "Languages directory not found"
+          # }
           
         } else {
           echo "❌ Inno Setup not found in PATH"
