@@ -109,13 +109,7 @@ jobs:
           exit 1
         }
     
-    - name: Upload test artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: nsis-test-basic
-        path: |
-          test-installer.exe
-          test.nsi
+
 
   test-nsis-advanced:
     name: Advanced NSIS Test
