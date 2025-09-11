@@ -6,7 +6,7 @@ set project_version=1.9.0
 set project_root=%~dp0..\..
 set scripts_dir=%project_root%\build_tools\scripts
 set key_private=%project_root%\build_tools\keys\dsa_priv.pem
-set updater_dir=%project_root%\\dist\\updater
+set  =%project_root%\\dist\\updater
 set installer_dir=%project_root%\\dist\\installer
 
 

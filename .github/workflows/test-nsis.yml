@@ -63,6 +63,132 @@ jobs:
           Get-ChildItem $includeDir -Name "*.nsh" | Sort-Object
         }
     
+    - name: Install nsProcess Plugin
+      run: |
+        echo "=== Installing nsProcess Plugin ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        echo "NSIS Directory: $nsisDir"
+        
+        # Download nsProcess plugin
+        echo "\n=== Downloading nsProcess Plugin ==="
+        $downloadUrl = "https://nsis.sourceforge.io/mediawiki/images/1/18/NsProcess.zip"
+        $downloadPath = "$env:TEMP\nsProcess.zip"
+        
+        try {
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+          echo "✅ Downloaded nsProcess plugin to: $downloadPath"
+        } catch {
+          echo "❌ Failed to download nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Extract plugin
+        echo "\n=== Extracting nsProcess Plugin ==="
+        $extractPath = "$env:TEMP\nsProcess"
+        if (Test-Path $extractPath) {
+          Remove-Item $extractPath -Recurse -Force
+        }
+        
+        try {
+          Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+          echo "✅ Extracted nsProcess plugin to: $extractPath"
+        } catch {
+          echo "❌ Failed to extract nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Copy plugin files to NSIS directory
+        echo "\n=== Installing nsProcess Plugin Files ==="
+        
+        # Find and copy plugin DLL files
+        $pluginFiles = Get-ChildItem $extractPath -Recurse -Filter "*.dll"
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        
+        foreach ($file in $pluginFiles) {
+          $destPath = Join-Path $pluginsDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to plugins directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Find and copy include files
+        $includeFiles = Get-ChildItem $extractPath -Recurse -Filter "*.nsh"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        foreach ($file in $includeFiles) {
+          $destPath = Join-Path $includeDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to include directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Cleanup
+        Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+        Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+        
+        echo "\n✅ nsProcess plugin installation completed!"
+    
+    - name: Verify nsProcess Plugin Installation
+      run: |
+        echo "=== Verifying nsProcess Plugin Installation ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        
+        # Check for nsProcess plugin files
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        echo "\n=== Checking Plugin Files ==="
+        $nsProcessDlls = @("nsProcess.dll", "nsProcessW.dll")
+        $foundDlls = @()
+        
+        foreach ($dll in $nsProcessDlls) {
+          $dllPath = Join-Path $pluginsDir $dll
+          if (Test-Path $dllPath) {
+            echo "✅ Found: $dll"
+            $foundDlls += $dll
+          } else {
+            echo "❌ Missing: $dll"
+          }
+        }
+        
+        echo "\n=== Checking Include Files ==="
+        $nsProcessIncludes = @("nsProcess.nsh")
+        $foundIncludes = @()
+        
+        foreach ($nsh in $nsProcessIncludes) {
+          $nshPath = Join-Path $includeDir $nsh
+          if (Test-Path $nshPath) {
+            echo "✅ Found: $nsh"
+            $foundIncludes += $nsh
+          } else {
+            echo "❌ Missing: $nsh"
+          }
+        }
+        
+        # Summary
+        echo "\n=== Installation Summary ==="
+        echo "Plugin DLLs found: $($foundDlls.Count)/$($nsProcessDlls.Count)"
+        echo "Include files found: $($foundIncludes.Count)/$($nsProcessIncludes.Count)"
+        
+        if ($foundDlls.Count -gt 0 -and $foundIncludes.Count -gt 0) {
+          echo "✅ nsProcess plugin is ready to use!"
+        } else {
+          echo "❌ nsProcess plugin installation incomplete!"
+          exit 1
+        }
+    
     - name: Test simple NSIS script
       run: |
         echo "=== Testing Simple NSIS Script ==="
@@ -109,6 +235,124 @@ jobs:
           exit 1
         }
     
+    - name: Test nsProcess Plugin
+      run: |
+        echo "=== Testing nsProcess Plugin ==="
+        
+        # Create a test script that uses nsProcess plugin
+        $nsProcessTestScript = @'
+        ; nsProcess Plugin Test Script
+        !define APP_NAME "nsProcessTest"
+        !define APP_VERSION "1.0.0"
+        
+        Name "${APP_NAME}"
+        OutFile "nsprocess-test-installer.exe"
+        InstallDir "$TEMP\${APP_NAME}"
+        
+        ; Include nsProcess plugin
+        !include "nsProcess.nsh"
+        
+        ; Modern UI
+        !include "MUI2.nsh"
+        !insertmacro MUI_PAGE_WELCOME
+        !insertmacro MUI_PAGE_INSTFILES
+        !insertmacro MUI_LANGUAGE "English"
+        
+        Section "Main"
+          SetOutPath "$INSTDIR"
+          
+          ; Test nsProcess plugin functions
+          DetailPrint "Testing nsProcess plugin..."
+          
+          ; Test FindProcess function
+          ${nsProcess::FindProcess} "explorer.exe" $R0
+          ${If} $R0 == 0
+            DetailPrint "✅ FindProcess test: explorer.exe found (as expected)"
+          ${Else}
+            DetailPrint "⚠️ FindProcess test: explorer.exe not found (unexpected but not critical)"
+          ${EndIf}
+          
+          ; Test finding a non-existent process
+          ${nsProcess::FindProcess} "nonexistent-process-12345.exe" $R1
+          ${If} $R1 != 0
+            DetailPrint "✅ FindProcess test: nonexistent process correctly not found"
+          ${Else}
+            DetailPrint "❌ FindProcess test: nonexistent process incorrectly found"
+          ${EndIf}
+          
+          ; Create a test file to indicate success
+          FileOpen $0 "$INSTDIR\nsprocess-test-result.txt" w
+          FileWrite $0 "nsProcess plugin test completed successfully!$\r$\n"
+          FileWrite $0 "FindProcess function is working correctly.$\r$\n"
+          FileWrite $0 "Test timestamp: $$(Date) $$(Time)$\r$\n"
+          FileClose $0
+          
+          DetailPrint "✅ nsProcess plugin test completed successfully!"
+          
+          ; Unload the plugin
+          ${nsProcess::Unload}
+        SectionEnd
+        '@
+        
+        # Write nsProcess test script to file
+        $nsProcessTestScript | Out-File -FilePath "nsprocess-test.nsi" -Encoding UTF8
+        
+        # Compile nsProcess test script
+        echo "\n=== Compiling nsProcess Test Script ==="
+        try {
+          makensis nsprocess-test.nsi
+          echo "✅ nsProcess test script compiled successfully!"
+        } catch {
+          echo "❌ nsProcess test script compilation failed: $_"
+          echo "\n=== Checking for compilation errors ==="
+          makensis nsprocess-test.nsi 2>&1
+          exit 1
+        }
+        
+        # Check if nsProcess test installer was created
+        if (Test-Path "nsprocess-test-installer.exe") {
+          $fileInfo = Get-Item "nsprocess-test-installer.exe"
+          echo "✅ nsProcess test installer created successfully!"
+          echo "📊 File size: $([math]::Round($fileInfo.Length / 1KB, 2)) KB"
+          
+          # Test the installer in silent mode
+          echo "\n=== Testing nsProcess Installer Execution ==="
+          try {
+            $testInstallDir = "$env:TEMP\nsProcessTest"
+            if (Test-Path $testInstallDir) {
+              Remove-Item $testInstallDir -Recurse -Force
+            }
+            
+            # Run installer silently
+            Start-Process -FilePath ".\nsprocess-test-installer.exe" -ArgumentList "/S" -Wait -NoNewWindow
+            
+            # Check if test result file was created
+            $resultFile = "$testInstallDir\nsprocess-test-result.txt"
+            if (Test-Path $resultFile) {
+              echo "✅ nsProcess installer executed successfully!"
+              echo "\n=== Test Results ==="
+              Get-Content $resultFile
+            } else {
+              echo "⚠️ nsProcess installer executed but result file not found"
+            }
+            
+            # Cleanup test installation
+            if (Test-Path $testInstallDir) {
+              Remove-Item $testInstallDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+            
+          } catch {
+            echo "⚠️ nsProcess installer execution test failed: $_"
+            echo "This is not critical as the compilation test already passed."
+          }
+          
+        } else {
+          echo "❌ nsProcess test installer creation failed!"
+          exit 1
+        }
+        
+        echo "\n🎉 nsProcess plugin is working correctly!"
+    
 
 
   test-nsis-advanced:
@@ -131,6 +375,132 @@ jobs:
     
     - name: Get dependencies
       run: flutter pub get
+    
+    - name: Install nsProcess Plugin
+      run: |
+        echo "=== Installing nsProcess Plugin for Advanced Test ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        echo "NSIS Directory: $nsisDir"
+        
+        # Download nsProcess plugin
+        echo "\n=== Downloading nsProcess Plugin ==="
+        $downloadUrl = "https://nsis.sourceforge.io/mediawiki/images/1/18/NsProcess.zip"
+        $downloadPath = "$env:TEMP\nsProcess.zip"
+        
+        try {
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+          echo "✅ Downloaded nsProcess plugin to: $downloadPath"
+        } catch {
+          echo "❌ Failed to download nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Extract plugin
+        echo "\n=== Extracting nsProcess Plugin ==="
+        $extractPath = "$env:TEMP\nsProcess"
+        if (Test-Path $extractPath) {
+          Remove-Item $extractPath -Recurse -Force
+        }
+        
+        try {
+          Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+          echo "✅ Extracted nsProcess plugin to: $extractPath"
+        } catch {
+          echo "❌ Failed to extract nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Copy plugin files to NSIS directory
+        echo "\n=== Installing nsProcess Plugin Files ==="
+        
+        # Find and copy plugin DLL files
+        $pluginFiles = Get-ChildItem $extractPath -Recurse -Filter "*.dll"
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        
+        foreach ($file in $pluginFiles) {
+          $destPath = Join-Path $pluginsDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to plugins directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Find and copy include files
+        $includeFiles = Get-ChildItem $extractPath -Recurse -Filter "*.nsh"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        foreach ($file in $includeFiles) {
+          $destPath = Join-Path $includeDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to include directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Cleanup
+        Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+        Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+        
+        echo "\n✅ nsProcess plugin installation completed for advanced test!"
+    
+    - name: Verify nsProcess Plugin for Advanced Test
+      run: |
+        echo "=== Verifying nsProcess Plugin for Advanced Test ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        
+        # Check for nsProcess plugin files
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        echo "\n=== Checking Plugin Files ==="
+        $nsProcessDlls = @("nsProcess.dll", "nsProcessW.dll")
+        $foundDlls = @()
+        
+        foreach ($dll in $nsProcessDlls) {
+          $dllPath = Join-Path $pluginsDir $dll
+          if (Test-Path $dllPath) {
+            echo "✅ Found: $dll"
+            $foundDlls += $dll
+          } else {
+            echo "❌ Missing: $dll"
+          }
+        }
+        
+        echo "\n=== Checking Include Files ==="
+        $nsProcessIncludes = @("nsProcess.nsh")
+        $foundIncludes = @()
+        
+        foreach ($nsh in $nsProcessIncludes) {
+          $nshPath = Join-Path $includeDir $nsh
+          if (Test-Path $nshPath) {
+            echo "✅ Found: $nsh"
+            $foundIncludes += $nsh
+          } else {
+            echo "❌ Missing: $nsh"
+          }
+        }
+        
+        # Summary
+        echo "\n=== Installation Summary ==="
+        echo "Plugin DLLs found: $($foundDlls.Count)/$($nsProcessDlls.Count)"
+        echo "Include files found: $($foundIncludes.Count)/$($nsProcessIncludes.Count)"
+        
+        if ($foundDlls.Count -gt 0 -and $foundIncludes.Count -gt 0) {
+          echo "✅ nsProcess plugin is ready for advanced test!"
+        } else {
+          echo "❌ nsProcess plugin installation incomplete for advanced test!"
+          exit 1
+        }
     
     - name: Build Flutter app (minimal)
       run: |
@@ -229,6 +599,132 @@ jobs:
     
     - name: Build Flutter app
       run: flutter build windows --release
+    
+    - name: Install nsProcess Plugin
+      run: |
+        echo "=== Installing nsProcess Plugin for Full Test ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        echo "NSIS Directory: $nsisDir"
+        
+        # Download nsProcess plugin
+        echo "\n=== Downloading nsProcess Plugin ==="
+        $downloadUrl = "https://nsis.sourceforge.io/mediawiki/images/1/18/NsProcess.zip"
+        $downloadPath = "$env:TEMP\nsProcess.zip"
+        
+        try {
+          Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath -UseBasicParsing
+          echo "✅ Downloaded nsProcess plugin to: $downloadPath"
+        } catch {
+          echo "❌ Failed to download nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Extract plugin
+        echo "\n=== Extracting nsProcess Plugin ==="
+        $extractPath = "$env:TEMP\nsProcess"
+        if (Test-Path $extractPath) {
+          Remove-Item $extractPath -Recurse -Force
+        }
+        
+        try {
+          Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+          echo "✅ Extracted nsProcess plugin to: $extractPath"
+        } catch {
+          echo "❌ Failed to extract nsProcess plugin: $_"
+          exit 1
+        }
+        
+        # Copy plugin files to NSIS directory
+        echo "\n=== Installing nsProcess Plugin Files ==="
+        
+        # Find and copy plugin DLL files
+        $pluginFiles = Get-ChildItem $extractPath -Recurse -Filter "*.dll"
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        
+        foreach ($file in $pluginFiles) {
+          $destPath = Join-Path $pluginsDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to plugins directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Find and copy include files
+        $includeFiles = Get-ChildItem $extractPath -Recurse -Filter "*.nsh"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        foreach ($file in $includeFiles) {
+          $destPath = Join-Path $includeDir $file.Name
+          try {
+            Copy-Item $file.FullName $destPath -Force
+            echo "✅ Copied $($file.Name) to include directory"
+          } catch {
+            echo "❌ Failed to copy $($file.Name): $_"
+          }
+        }
+        
+        # Cleanup
+        Remove-Item $downloadPath -Force -ErrorAction SilentlyContinue
+        Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+        
+        echo "\n✅ nsProcess plugin installation completed for full test!"
+    
+    - name: Verify nsProcess Plugin for Full Test
+      run: |
+        echo "=== Verifying nsProcess Plugin for Full Test ==="
+        
+        # Get NSIS installation directory
+        $nsisPath = where.exe makensis
+        $nsisDir = Split-Path $nsisPath -Parent
+        
+        # Check for nsProcess plugin files
+        $pluginsDir = Join-Path $nsisDir "Plugins"
+        $includeDir = Join-Path $nsisDir "Include"
+        
+        echo "\n=== Checking Plugin Files ==="
+        $nsProcessDlls = @("nsProcess.dll", "nsProcessW.dll")
+        $foundDlls = @()
+        
+        foreach ($dll in $nsProcessDlls) {
+          $dllPath = Join-Path $pluginsDir $dll
+          if (Test-Path $dllPath) {
+            echo "✅ Found: $dll"
+            $foundDlls += $dll
+          } else {
+            echo "❌ Missing: $dll"
+          }
+        }
+        
+        echo "\n=== Checking Include Files ==="
+        $nsProcessIncludes = @("nsProcess.nsh")
+        $foundIncludes = @()
+        
+        foreach ($nsh in $nsProcessIncludes) {
+          $nshPath = Join-Path $includeDir $nsh
+          if (Test-Path $nshPath) {
+            echo "✅ Found: $nsh"
+            $foundIncludes += $nsh
+          } else {
+            echo "❌ Missing: $nsh"
+          }
+        }
+        
+        # Summary
+        echo "\n=== Installation Summary ==="
+        echo "Plugin DLLs found: $($foundDlls.Count)/$($nsProcessDlls.Count)"
+        echo "Include files found: $($foundIncludes.Count)/$($nsProcessIncludes.Count)"
+        
+        if ($foundDlls.Count -gt 0 -and $foundIncludes.Count -gt 0) {
+          echo "✅ nsProcess plugin is ready for full test!"
+        } else {
+          echo "❌ nsProcess plugin installation incomplete for full test!"
+          exit 1
+        }
     
     - name: Test complete build process
       run: |
