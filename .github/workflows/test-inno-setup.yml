@@ -15,58 +15,58 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Check Inno Setup installation
-      run: |
-        echo "=== Checking Inno Setup Installation ==="
+    # - name: Check Inno Setup installation
+    #   run: |
+    #     echo "=== Checking Inno Setup Installation ==="
         
-        # Check if Inno Setup is installed
-        $innoPath = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
-        if ($innoPath) {
-          echo "✅ Inno Setup found at: $($innoPath.Source)"
+    #     # Check if Inno Setup is installed
+    #     $innoPath = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+    #     if ($innoPath) {
+    #       echo "✅ Inno Setup found at: $($innoPath.Source)"
           
-          # Check version
-          echo "\n=== Inno Setup Version ==="
-          & "ISCC.exe" /?
+    #       # Check version
+    #       echo "\n=== Inno Setup Version ==="
+    #       & "ISCC.exe" /?
           
-          # Check installation directory
-          echo "\n=== Inno Setup Installation Directory ==="
-          $innoDir = Split-Path $innoPath.Source
-          echo "Installation directory: $innoDir"
+    #       # Check installation directory
+    #       echo "\n=== Inno Setup Installation Directory ==="
+    #       $innoDir = Split-Path $innoPath.Source
+    #       echo "Installation directory: $innoDir"
           
-          # List available files
-          echo "\n=== Available Files ==="
-          Get-ChildItem $innoDir -Name
+    #       # List available files
+    #       echo "\n=== Available Files ==="
+    #       Get-ChildItem $innoDir -Name
           
-          # # Check for language files
-          # echo "\n=== Language Files ==="
-          # $langDir = Join-Path $innoDir "Languages"
-          # if (Test-Path $langDir) {
-          #   Get-ChildItem $langDir -Name "*.isl" | ForEach-Object { echo "  - $_" }
-          # } else {
-          #   echo "Languages directory not found"
-          # }
+    #       # # Check for language files
+    #       # echo "\n=== Language Files ==="
+    #       # $langDir = Join-Path $innoDir "Languages"
+    #       # if (Test-Path $langDir) {
+    #       #   Get-ChildItem $langDir -Name "*.isl" | ForEach-Object { echo "  - $_" }
+    #       # } else {
+    #       #   echo "Languages directory not found"
+    #       # }
           
-        } else {
-          echo "❌ Inno Setup not found in PATH"
-          echo "\n=== Searching for Inno Setup ==="
+    #     } else {
+    #       echo "❌ Inno Setup not found in PATH"
+    #       echo "\n=== Searching for Inno Setup ==="
           
-          # Search common installation paths
-          $commonPaths = @(
-            "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-            "C:\Program Files\Inno Setup 6\ISCC.exe",
-            "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
-            "C:\Program Files\Inno Setup 5\ISCC.exe"
-          )
+    #       # Search common installation paths
+    #       $commonPaths = @(
+    #         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+    #         "C:\Program Files\Inno Setup 6\ISCC.exe",
+    #         "C:\Program Files (x86)\Inno Setup 5\ISCC.exe",
+    #         "C:\Program Files\Inno Setup 5\ISCC.exe"
+    #       )
           
-          foreach ($path in $commonPaths) {
-            if (Test-Path $path) {
-              echo "Found Inno Setup at: $path"
-              & $path /?
-              break
-            }
-          }
-        }
-      shell: powershell
+    #       foreach ($path in $commonPaths) {
+    #         if (Test-Path $path) {
+    #           echo "Found Inno Setup at: $path"
+    #           & $path /?
+    #           break
+    #         }
+    #       }
+    #     }
+    #   shell: powershell
       
     - name: Setup Inno Setup Environment
       run: |
