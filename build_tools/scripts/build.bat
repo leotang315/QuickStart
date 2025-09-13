@@ -139,6 +139,14 @@ exit /b 0
 :extract_project_info
 echo Extracting project information from pubspec.yaml...
 
+:: Get dependencies
+echo Getting Flutter dependencies...
+call flutter pub get
+if !ERRORLEVEL! neq 0 (
+    echo Error: Flutter pub get failed
+    exit /b 1
+)
+
 :: Change to scripts directory
 cd /d "!scripts_dir!"
 if !ERRORLEVEL! neq 0 (
