@@ -5,7 +5,9 @@ import 'dart:io';
 import 'log_service.dart';
 
 class AutoUpdateService {
-  static const String _feedUrl = 'http://localhost:80/appcast.xml';
+  // 更新为GitHub上的固定URL
+  static const String _feedUrl =
+      'https://github.com/leotang315/QuickStart/releases/latest/download/appcast.xml';
 
   static bool _isInitialized = false;
 

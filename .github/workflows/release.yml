@@ -121,6 +121,17 @@ jobs:
         asset_path: ${{ steps.installer_info.outputs.INSTALLER_PATH }}
         asset_name: ${{ steps.installer_info.outputs.INSTALLER_FILENAME }}
         asset_content_type: application/octet-stream
+    
+    # 上传appcast.xml文件
+    - name: Upload appcast.xml
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: dist/updater/appcast.xml
+        asset_name: appcast.xml
+        asset_content_type: application/xml
 
 
 
