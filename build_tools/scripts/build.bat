@@ -147,7 +147,20 @@ if !ERRORLEVEL! neq 0 (
 )
 
 :: Extract project info using Dart script
-for /f "tokens=1,2 delims==" %%a in ('call dart run extract_project_info.dart "!project_root!\pubspec.yaml"  2^>nul') do (
+echo Current directory: %CD%
+echo Project root path: !project_root!
+echo Full pubspec path: "!project_root!\pubspec.yaml"
+
+:: 检查文件是否存在
+if not exist "!project_root!\pubspec.yaml" (
+    echo ERROR: pubspec.yaml not found at "!project_root!\pubspec.yaml"
+    exit /b 1
+)
+
+:: 移除错误重定向以查看完整输出
+echo Running extract_project_info.dart...
+for /f "tokens=1,2 delims==" %%a in ('call dart run extract_project_info.dart "!project_root!\pubspec.yaml"') do (
+    echo Extracted: %%a=%%b
     if "%%a"=="PROJECT_NAME" set "project_name=%%b"
     if "%%a"=="PROJECT_VERSION" set "project_version=%%b"
     if "%%a"=="INSTALLER_FILENAME" set "installer_filename=%%b"

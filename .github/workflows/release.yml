@@ -107,7 +107,7 @@ jobs:
     - name: Get installer information
       id: installer_info
       run: |
-        $installerPath = Get-ChildItem -Path build_tools\scripts\dist\installer\*.exe | Select-Object -ExpandProperty FullName
+        $installerPath = Get-ChildItem -Path dist\installer\*.exe | Select-Object -ExpandProperty FullName
         echo "INSTALLER_PATH=$installerPath" >> $env:GITHUB_OUTPUT
         $installerFileName = Split-Path $installerPath -Leaf
         echo "INSTALLER_FILENAME=$installerFileName" >> $env:GITHUB_OUTPUT
@@ -121,5 +121,8 @@ jobs:
         asset_path: ${{ steps.installer_info.outputs.INSTALLER_PATH }}
         asset_name: ${{ steps.installer_info.outputs.INSTALLER_FILENAME }}
         asset_content_type: application/octet-stream
+
+
+
 
   
