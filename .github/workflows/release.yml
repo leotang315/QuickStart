@@ -31,7 +31,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Get version from tag
+    - name: Get version
       id: get_version
       run: |
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -99,19 +99,15 @@ jobs:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
     
-    - name: Enable Windows desktop
-      run: flutter config --enable-windows-desktop
-    
-    - name: Get dependencies
-      run: flutter pub get
-    
-    - name: Build Windows app
-      run: flutter build windows --release
-    
-    - name: Create Windows archive
+    - name: Run build script
+      id: build
       run: |
-        cd build/windows/x64/runner/Release
-        7z a -tzip ../../../../../QuickStart-Windows.zip *
+        cd build_tools/scripts
+        .\build.bat
+        $installerPath = Get-ChildItem -Path ..\..\dist\installer\*.exe | Select-Object -ExpandProperty FullName
+        echo "INSTALLER_PATH=$installerPath" >> $env:GITHUB_OUTPUT
+        $installerFileName = Split-Path $installerPath -Leaf
+        echo "INSTALLER_FILENAME=$installerFileName" >> $env:GITHUB_OUTPUT
     
     - name: Upload Windows Release Asset
       uses: actions/upload-release-asset@v1
@@ -119,7 +115,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./QuickStart-Windows.zip
-        asset_name: QuickStart-Windows.zip
-        asset_content_type: application/zip
+        asset_path: ${{ steps.build.outputs.INSTALLER_PATH }}
+        asset_name: ${{ steps.build.outputs.INSTALLER_FILENAME }}
+        asset_content_type: application/octet-stream
+
   
