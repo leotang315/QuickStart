@@ -254,7 +254,7 @@ exit /b 0
 :: =============================================================================
 :: Function: Sign update package and generate appcast
 :: =============================================================================
-:sign_and_generate_updates2
+:sign_and_generate_updates
 echo Processing auto-update files...
 
 :: Check if private key exists
@@ -283,7 +283,7 @@ echo Signature generated: !sign_output!
 
 :: Generate appcast.xml
 echo Generating appcast.xml...
-dart run "!scripts_dir!\generate_appcast.dart" "!installer_path!" "!sign_output!" "!project_name!" "!project_version!" "!updater_dir!"
+call dart run "!scripts_dir!\generate_appcast.dart" "!installer_path!" "!sign_output!" "!project_name!" "!project_version!" "!updater_dir!"
 if !errorlevel! neq 0 (
     echo Error: Failed to generate appcast.xml
     exit /b 1
