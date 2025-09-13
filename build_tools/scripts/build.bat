@@ -48,15 +48,18 @@ exit /b 0
 echo Initializing build configuration...
 
 :: Set default values
-set "project_name=QuickStart"
-set "project_version=1.9.0"
+set "project_name=default"
+set "project_version=0.0.0"
+set "installer_filename=default-0.0.0-windows-setup"
+
 set "project_root=%~dp0..\.."
 set "scripts_dir=%project_root%\build_tools\scripts"
 set "updater_dir=%project_root%\dist\updater"
 set "installer_dir=%project_root%\dist\installer"
 set "build_dir=%project_root%\build\windows\x64\runner\Release"
 set "key_private_path=%project_root%\build_tools\keys\dsa_priv.pem"
-set "installer_path="
+set "installer_path=%installer_dir%\!installer_filename!.exe"
+set "installer_path_without_exe=%installer_dir%\!installer_filename!"
 
 :: Create necessary directories
 if not exist "!project_root!\dist" (
@@ -137,9 +140,10 @@ if !ERRORLEVEL! neq 0 (
 )
 
 :: Extract project info using Dart script
-for /f "tokens=1,2 delims==" %%a in ('dart run extract_project_info.dart 2^>nul') do (
+for /f "tokens=1,2 delims==" %%a in ('dart run extract_project_info.dart "!project_root!\pubspec.yaml"  2^>nul') do (
     if "%%a"=="PROJECT_NAME" set "project_name=%%b"
     if "%%a"=="PROJECT_VERSION" set "project_version=%%b"
+    if "%%a"=="INSTALLER_FILENAME" set "installer_filename=%%b"
 )
 
 :: Validate extracted information
@@ -151,11 +155,14 @@ if "!project_version!"=="" (
     echo Error: Failed to extract project version from pubspec.yaml
     exit /b 1
 )
+if "!installer_filename!"=="" (
+    echo Error: Failed to extract installer filename from pubspec.yaml
+    exit /b 1
+)
 
 :: Set output file path
-
-set "installer_path=!installer_dir!\!project_name!-!project_version!-windows-setup.exe"
-set "installer_path_without_exe=!installer_dir!\!project_name!-!project_version!-windows-setup"
+set "installer_path=%installer_dir%\!installer_filename!.exe"
+set "installer_path_without_exe=%installer_dir%\!installer_filename!"
 
 :: Display project information
 echo.
@@ -163,8 +170,15 @@ echo ===============================================
 echo Project Information:
 echo   Name: !project_name!
 echo   Version: !project_version!
-echo   Root: !project_root!
-echo   Output: !installer_path!
+echo   Installer Filename: !installer_filename!
+
+echo   Project Root: !project_root!
+echo   Installer Dir: !installer_dir!
+echo   Updater Dir: !updater_dir!
+echo   Build Dir: !build_dir!
+echo   Key Private Path: !key_private_path!
+echo   Installer Path: !installer_path!
+echo   Installer Path Without EXE: !installer_path_without_exe!
 echo ===============================================
 echo.
 
