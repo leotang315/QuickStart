@@ -61,6 +61,13 @@ set "key_private_path=%project_root%\build_tools\keys\dsa_priv.pem"
 set "installer_path=%installer_dir%\!installer_filename!.exe"
 set "installer_path_without_exe=%installer_dir%\!installer_filename!"
 
+:: Clean existing dist directory if it exists
+if exist "!project_root!\dist" (
+    echo Cleaning existing dist directory...
+    rmdir /s /q "!project_root!\dist"
+)
+
+
 :: Create necessary directories
 if not exist "!project_root!\dist" (
     echo Creating dist directory...
@@ -140,7 +147,7 @@ if !ERRORLEVEL! neq 0 (
 )
 
 :: Extract project info using Dart script
-for /f "tokens=1,2 delims==" %%a in ('dart run extract_project_info.dart "!project_root!\pubspec.yaml"  2^>nul') do (
+for /f "tokens=1,2 delims==" %%a in ('call dart run extract_project_info.dart "!project_root!\pubspec.yaml"  2^>nul') do (
     if "%%a"=="PROJECT_NAME" set "project_name=%%b"
     if "%%a"=="PROJECT_VERSION" set "project_version=%%b"
     if "%%a"=="INSTALLER_FILENAME" set "installer_filename=%%b"
