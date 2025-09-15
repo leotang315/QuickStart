@@ -88,9 +88,9 @@ jobs:
     #   with:
     #     sdk: stable
 
-    # - name: Install dependencies
-    #   run: |
-    #     dart pub global activate auto_updater
+    - name: Install dependencies
+      run: |
+        flutter pub get
 
     - name: Run build script using build.dart
       id: build
