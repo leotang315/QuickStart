@@ -45,7 +45,9 @@ jobs:
       uses: dart-lang/setup-dart@v1
       with:
         sdk: stable
-
+    - name: Install dependencies
+      run: |
+        flutter pub get
     - name: Extract changelog using build.dart
       id: changelog
       run: |
