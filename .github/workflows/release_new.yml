@@ -1,0 +1,170 @@
+# 自动发布工作流 (New Version)
+# 基于优化后的 build.dart 的简化版本
+
+name: Release New
+
+# 触发条件：当推送版本标签时
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+  
+env:
+  FLUTTER_VERSION: '3.29.0'
+permissions: write-all
+
+jobs:
+  # 创建Release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.VERSION }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Setup Dart
+      uses: dart-lang/setup-dart@v1
+      with:
+        sdk: stable
+
+    - name: Extract changelog using build.dart
+      id: changelog
+      run: |
+        cd build_tools/scripts
+        CHANGELOG_OUTPUT=$(dart build.dart --project-info --format json | jq -r '.changelog')
+        echo "content<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG_OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: ${{ steps.changelog.outputs.content }}
+        draft: false
+        prerelease: false
+  
+  # 构建并上传Windows版本
+  build-and-upload-windows:
+    name: Build and Upload Windows
+    runs-on: windows-latest
+    needs: create-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
+    
+    # - name: Setup Dart
+    #   uses: dart-lang/setup-dart@v1
+    #   with:
+    #     sdk: stable
+
+    # - name: Install dependencies
+    #   run: |
+    #     dart pub global activate auto_updater
+
+    - name: Run build script using build.dart
+      id: build
+      run: |
+        cd build_tools\scripts
+        dart build.dart --verbose
+    
+    - name: Get build information using build.dart
+      id: build_info
+      run: |
+        cd build_tools\scripts
+        $buildInfo = dart build.dart --project-info --format json | ConvertFrom-Json
+        echo "INSTALLER_PATH=$($buildInfo.installer_output_path).exe" >> $env:GITHUB_OUTPUT
+        echo "INSTALLER_FILENAME=$($buildInfo.installer_filename).exe" >> $env:GITHUB_OUTPUT
+        echo "APPCAST_PATH=$($buildInfo.appcast_path)" >> $env:GITHUB_OUTPUT
+        echo "PROJECT_NAME=$($buildInfo.display_name)" >> $env:GITHUB_OUTPUT
+        echo "PROJECT_VERSION=$($buildInfo.version)" >> $env:GITHUB_OUTPUT
+    
+    - name: Verify build outputs
+      run: |
+        echo "Checking build outputs..."
+        echo "Installer: ${{ steps.build_info.outputs.INSTALLER_PATH }}"
+        echo "Appcast: ${{ steps.build_info.outputs.APPCAST_PATH }}"
+        
+        if (Test-Path "${{ steps.build_info.outputs.INSTALLER_PATH }}") {
+          echo "✓ Installer found"
+          $size = (Get-Item "${{ steps.build_info.outputs.INSTALLER_PATH }}").Length
+          echo "  Size: $size bytes"
+        } else {
+          echo "✗ Installer not found"
+          exit 1
+        }
+        
+        if (Test-Path "${{ steps.build_info.outputs.APPCAST_PATH }}") {
+          echo "✓ Appcast found"
+        } else {
+          echo "⚠ Appcast not found (may be skipped if no private key)"
+        }
+    
+    - name: Upload Windows Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ${{ steps.build_info.outputs.INSTALLER_PATH }}
+        asset_name: ${{ steps.build_info.outputs.INSTALLER_FILENAME }}
+        asset_content_type: application/octet-stream
+    
+    # 上传appcast.xml文件（如果存在）
+    - name: Upload appcast.xml
+      if: hashFiles(steps.build_info.outputs.APPCAST_PATH) != ''
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ${{ steps.build_info.outputs.APPCAST_PATH }}
+        asset_name: appcast.xml
+        asset_content_type: application/xml
+
+    # 显示构建摘要
+    - name: Build Summary
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Project:** ${{ steps.build_info.outputs.PROJECT_NAME }} v${{ steps.build_info.outputs.PROJECT_VERSION }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Release:** ${{ needs.create-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Installer:** ${{ steps.build_info.outputs.INSTALLER_FILENAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Files Generated:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Windows Installer: ${{ steps.build_info.outputs.INSTALLER_FILENAME }}" >> $GITHUB_STEP_SUMMARY
+        if (Test-Path "${{ steps.build_info.outputs.APPCAST_PATH }}") {
+          echo "- ✅ Auto-update Config: appcast.xml" >> $GITHUB_STEP_SUMMARY
+        } else {
+          echo "- ⚠️ Auto-update Config: Not generated (private key missing)" >> $GITHUB_STEP_SUMMARY
+        }

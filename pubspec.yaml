@@ -1,6 +1,7 @@
 name: quick_start
-description: "A new Flutter project."
-version: 1.9.1
+display_name: "QuickStart"
+description: "A quick launcher for desktop programs and applications."
+version: 1.9.3
 publish_to: 'none'
 
 environment:
