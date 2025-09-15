@@ -41,15 +41,16 @@ jobs:
           echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         fi
 
-    - name: Setup Dart
-      uses: dart-lang/setup-dart@v1
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
       with:
-        sdk: stable
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        channel: 'stable'
 
     - name: Install dependencies
       run: |
         flutter pub get
-        
+
     - name: Extract changelog using build.dart
       id: changelog
       run: |
