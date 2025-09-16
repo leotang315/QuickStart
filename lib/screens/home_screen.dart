@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:logger/web.dart';
 import 'package:path/path.dart' as path;
+
 import 'package:quick_start/services/icon_service.dart';
 import '../models/program.dart';
 import '../models/category.dart';
@@ -13,6 +14,7 @@ import '../services/launcher_service.dart';
 import '../services/language_service.dart';
 import '../services/desktop_scanner_service.dart';
 import '../services/log_service.dart';
+import '../services/auto_update_service.dart';
 import '../widgets/animated_overlay.dart';
 import '../widgets/program_tile.dart';
 import '../widgets/custom_title_bar.dart';
@@ -47,12 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isProgramEditMode = false;
   bool _isCategoryEditMode = false;
   bool _hasDesktopBackup = false;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
     _loadProgramsAndCategories();
     _checkDesktopBackup();
+    _loadAppInfo();
 
     // 监听搜索框焦点变化
     _searchFocusListener = () {
@@ -85,7 +89,9 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // 自定义标题栏
                 CustomTitleBar(
-                  title: AppLocalizations.of(context)!.appTitle,
+                  title: _appVersion.isNotEmpty 
+                      ? '${AppLocalizations.of(context)!.appTitle} v$_appVersion'
+                      : AppLocalizations.of(context)!.appTitle,
                   onLanguageChange: _changeLanguage,
                 ),
                 // 头部区域
@@ -259,6 +265,20 @@ class _HomeScreenState extends State<HomeScreen> {
       LogService.error('Failed to check desktop backup status', e);
     }
   }
+
+  // 加载应用信息
+  Future<void> _loadAppInfo() async {
+    try {
+      final appInfo = await AutoUpdateService.getAppInfo();
+      setState(() {
+        _appVersion = appInfo['version'] ?? '';
+      });
+    } catch (e) {
+      LogService.error('Failed to load app info', e);
+    }
+  }
+
+
 
   // 整理桌面
   Future<void> _organizeDesktop() async {
