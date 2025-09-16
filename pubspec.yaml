@@ -1,8 +1,10 @@
 name: quick_start
 display_name: "QuickStart"
 description: "A quick launcher for desktop programs and applications."
-version: 1.9.4
+version: 1.9.5
 publish_to: 'none'
+homepage: https://github.com/leotang315/QuickStart
+repository: https://github.com/leotang315/QuickStart
 
 environment:
   sdk: ^3.7.0

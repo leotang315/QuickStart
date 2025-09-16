@@ -595,6 +595,9 @@ class BuildSteps {
       // Generate download filename
       final fileName = installerFile.uri.pathSegments.last;
 
+      // Generate GitHub release download URL
+      final downloadUrl = '${projectInfo.repository}/releases/download/v${projectInfo.version}/$fileName';
+      
       // Generate appcast.xml content
       final appcastXml = '''<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
@@ -609,7 +612,7 @@ class BuildSteps {
       ]]></description>
       <pubDate>$pubDate</pubDate>
       <enclosure
-        url="http://localhost:80/downloads/$fileName"
+        url="$downloadUrl"
         sparkle:version="${projectInfo.version}"
         sparkle:dsaSignature="${signResult.signature}"
         length="$actualFileSize"
