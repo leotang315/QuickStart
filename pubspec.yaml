@@ -1,7 +1,7 @@
 name: quick_start
 display_name: "QuickStart"
 description: "A quick launcher for desktop programs and applications."
-version: 1.9.3
+version: 1.9.4
 publish_to: 'none'
 
 environment:

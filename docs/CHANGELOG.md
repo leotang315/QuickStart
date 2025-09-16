@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.4] - 2025-01-21
+
+### Added
+- Simplified build script with basic compilation mode
+- English software license agreement
+- Flutter dependency installation in build process
+
+### Changed
+- Replaced FutureBuilder with state variable approach for app version display
+- Simplified build_new.bat script by removing complex parameter parsing
+- Updated license.txt to English version for international compatibility
+
+### Fixed
+- Improved performance by eliminating redundant FutureBuilder calls
+- Enhanced build process reliability with automatic dependency installation
+
 ## [1.9.3] - 2025-01-20
 
 ### Added
