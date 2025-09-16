@@ -1,9 +1,9 @@
-﻿QuickStart 软件许可协议
+﻿QuickStart Software License Agreement
 
-版权所有 (c) 2024 Your Company Name
+Copyright (c) 2024 Your Company Name
 
-本软件按"现状"提供，不提供任何明示或暗示的保证，包括但不限于适销性、特定用途适用性和非侵权性的保证。
+This software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement.
 
-在任何情况下，作者或版权持有人均不对任何索赔、损害或其他责任负责，无论是在合同诉讼、侵权行为还是其他方面，由软件或软件的使用或其他交易引起、由此产生或与之相关。
+In no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.
 
-使用本软件即表示您同意上述条款。
+By using this software, you agree to the above terms.
